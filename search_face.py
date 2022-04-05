@@ -54,7 +54,7 @@ def search_face_by_image(image_bytes: bytes, collection_id: str, max_matches: in
 
 
 if __name__ == '__main__':
-    image_path='./resources/jisu_single.jpg'
+    image_path = './resources/jisoo_single.jpg'
     with open(image_path, 'rb') as file:
         image_bytes = file.read()
     image_bytes = convert_image_bytes_popular(image_bytes=image_bytes)
