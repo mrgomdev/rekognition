@@ -39,7 +39,7 @@ def search_face_by_image(image_bytes: bytes, collection_id: str, max_matches: in
 
 
 if __name__ == '__main__':
-    image_bytes = image_to_base64(image_path='./resources/jisu_single.jpg')
+    image_bytes = load_image_bytes(image_path='./resources/jisu_single.jpg')
     collection_id = 'idols'
     threshold = 70
     max_matches = 3
