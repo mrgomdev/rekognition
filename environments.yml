@@ -1,0 +1,12 @@
+name: rekognition
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.9
+  - pip
+  - pipreqs
+  - pip:
+      - icecream==2.1.2
+      - boto3==1.21.32
+      - Pillow==9.1.0
