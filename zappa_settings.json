@@ -1,0 +1,11 @@
+{
+    "dev": {
+        "app_function": "flask_app.__init__.app",
+        "aws_region": "ap-northeast-2",
+        "profile_name": "default",
+        "project_name": "rekognition-zappa",
+        "runtime": "python3.8",
+        "s3_bucket": "zappa-ytxqfq5ho",
+        "slim_handler": true
+    }
+}
