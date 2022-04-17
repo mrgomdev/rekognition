@@ -2,6 +2,8 @@ import io
 
 from PIL import Image
 
+import requests
+
 
 MAX_IMAGE_BYTES_LENGTH = 1920
 def convert_image_bytes_popular(image_bytes: bytes) -> bytes:
@@ -18,3 +20,10 @@ def convert_image_bytes_popular(image_bytes: bytes) -> bytes:
     buffer = io.BytesIO()
     image.save(buffer, format=output_format)
     return buffer.getvalue()
+
+
+def get_error_image(url="https://twemoji.maxcdn.com/v/14.0.2/72x72/1f6ab.png") -> Image.Image:
+    with requests.session() as session:
+        response = session.get(url=url)
+        image = Image.open(io.BytesIO(response.content))
+    return image
