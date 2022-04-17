@@ -8,7 +8,7 @@ from . import models
 if INCLUDE_VIEWS:
     from . import views
 else:
-    @app.route('/')
+    @app.route('/hello')
     def hello():
         return models.render_template('', error_code=0, message='Hello World')
 
