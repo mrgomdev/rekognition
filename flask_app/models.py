@@ -1,5 +1,6 @@
 from typing import Optional, TypedDict, List
 
+import os
 from icecream import ic
 
 from flask_app import app
@@ -17,7 +18,7 @@ if not flask_app.INCLUDE_VIEWS:
 from rekognition import search_face, utils, utils_boto3, config
 
 CURRENT_USAGE = 0
-MAX_USAGE = 50
+MAX_USAGE = int(os.environ.get('MAX_USAGE', 50))
 
 
 class UploadPostPayload(TypedDict):
