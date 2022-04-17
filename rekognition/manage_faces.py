@@ -7,11 +7,13 @@ from tqdm import tqdm
 import boto3
 
 try:
+    from . import utils_alert
     from . import config
     from .idol import Idol
     from . import utils_boto3
     from .caching_boto3 import list_faces
 except ImportError:
+    import utils_alert
     import config
     from idol import Idol
     import utils_boto3
@@ -21,6 +23,7 @@ if not config.VERBOSE:
         return iterable
 
 
+@utils_alert.alert_slack_when_exception
 def _clear_all_idols(collection_id: str) -> None:
     client = boto3.client('rekognition')
     client.delete_collection(CollectionId=collection_id)
@@ -29,6 +32,7 @@ def clear_all_idols() -> None:
     _clear_all_idols(collection_id=config.idols_collection_id)
 
 
+@utils_alert.alert_slack_when_exception
 def upload_idol(image_path: str, repr_name: str) -> dict:
     image_s3_bucket_name = config.idols_bucket_name
     image_s3_object_key = os.path.join(config.idols_profile_root_path, repr_name, os.path.basename(image_path))
@@ -43,6 +47,7 @@ def upload_idol(image_path: str, repr_name: str) -> dict:
     return client.index_faces(Image=dict(S3Object=dict(Bucket=idol.image_s3_bucket_name, Name=idol.image_s3_object_key)), CollectionId=collection_id, ExternalImageId=idol.to_external_image_id(), DetectionAttributes=['ALL'], MaxFaces=1)
 
 
+@utils_alert.alert_slack_when_exception
 def upload_idols_from_directory(root_path: str) -> list[dict]:
     idols_responses = []
     for dir_path in filter(os.path.isdir, tqdm(glob.glob(os.path.join(root_path, '*')))):

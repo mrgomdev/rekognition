@@ -1,5 +1,6 @@
 from flask import render_template
 
+import rekognition.utils_alert
 from flask_app import app
 
 
@@ -15,5 +16,7 @@ def upload_get():
 
 @app.errorhandler(500)
 def server_error(e):
-    r = render_template('error.html', body=str(e.original_exception))
-    return r, 500
+    try:
+        return render_template('error.html', body=str(e.original_exception)), 500
+    finally:
+        rekognition.utils_alert.alert_slack_exception(error_code=-1, exception=e)

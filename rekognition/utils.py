@@ -4,8 +4,14 @@ from PIL import Image
 
 import requests
 
+try:
+    from . import utils_alert
+except ImportError:
+    import utils_alert
+
 
 MAX_IMAGE_BYTES_LENGTH = 1920
+@utils_alert.alert_slack_when_exception
 def convert_image_bytes_popular(image_bytes: bytes) -> bytes:
     image = Image.open(io.BytesIO(image_bytes))
 

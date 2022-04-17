@@ -7,11 +7,13 @@ import boto3
 
 try:
     from . import utils
+    from . import utils_alert
     from . import utils_boto3
 
     from . import config
 except ImportError:
     import utils
+    import utils_alert
     import utils_boto3
 
     import config
@@ -40,6 +42,7 @@ class SearchFaceResponse(TypedDict):
 class ParsedSearchFaceResponse(TypedDict):
     SearchedFaceBoundingBox: utils_boto3.BoundingBox
     MostFaceMatch: utils_boto3.FaceMatch
+@utils_alert.alert_slack_when_exception
 @utils_boto3.handle_request_error
 def _search_face_by_image(image_bytes: bytes, collection_id: str, max_matches: int = 10, threshold: int = 40) -> ParsedSearchFaceResponse:
     client = boto3.client('rekognition')

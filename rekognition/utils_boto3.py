@@ -7,6 +7,11 @@ import os
 import botocore.exceptions
 import boto3
 
+try:
+    from . import utils_alert
+except Exception:
+    import utils_alert
+
 
 ClientError = botocore.exceptions.ClientError
 
@@ -43,6 +48,7 @@ def handle_request_error(func: Callable[..., Any]) -> Callable[..., Any]:
     return wrapper
 
 
+@utils_alert.alert_slack_when_exception
 def upload_s3(file: Union[str, IO], bucket_name: str, key: str, content_type: Optional[str] = None, content_encoding: Optional[str] = None) -> dict:
     if isinstance(file, str):
         if content_type is None and content_encoding is None:
@@ -64,6 +70,7 @@ def upload_s3(file: Union[str, IO], bucket_name: str, key: str, content_type: Op
     return returned
 
 
+@utils_alert.alert_slack_when_exception
 def download_s3(bucket_name: str, key: str) -> bytes:
     s3_client = boto3.client('s3')
     returned = s3_client.get_object(Bucket=bucket_name, Key=key)['Body'].read()

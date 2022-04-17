@@ -3,12 +3,15 @@ from typing import List, Dict
 import boto3
 
 try:
+    from . import utils_alert
     from . import utils_boto3
 except ImportError:
+    import utils_alert
     import utils_boto3
 
 
 _LIST_FACES: Dict[str, List[dict]] = dict()
+@utils_alert.alert_slack_when_exception
 @utils_boto3.handle_request_error
 def list_faces(collection_id: str, fresh: bool, max_results=100) -> List[dict]:
     if fresh or collection_id not in _LIST_FACES:

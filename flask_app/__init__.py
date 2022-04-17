@@ -1,6 +1,8 @@
 from flask import Flask
 app = Flask(__name__)
 
+import rekognition.utils_alert
+
 INCLUDE_VIEWS = False
 
 from . import models
@@ -14,4 +16,9 @@ else:
 
     @app.errorhandler(500)
     def server_error(e):
-        return models.render_template('', error_code=-1, body=dict(exception=f'{type(e)}: {str(e)}'))
+        assert 'werkzeug.exceptions.InternalServerError' in str(type(e))
+        original_exception = e.original_exception
+        try:
+            return models.render_template('', error_code=-1, body=dict(exception=f'{type(original_exception)}: {str(original_exception)}')), 500
+        finally:
+            rekognition.utils_alert.alert_slack_exception(error_code=-1, exception=original_exception)

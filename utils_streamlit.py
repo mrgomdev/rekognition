@@ -2,6 +2,7 @@ from typing import Optional, Dict, Any, IO
 
 import requests
 
+import rekognition.utils_alert
 import streamlit_config
 
 
@@ -19,6 +20,7 @@ class ErrorResponse(Exception):
         return f'Error code: {self.error_code}. {str(self.body)}'
 
 
+@rekognition.utils_alert.alert_slack_when_exception
 def _fetch(session, url: str, method: str, data: Optional[Dict[str, Any]], files: Optional[Dict[str, IO]]) -> Dict[str, Any]:
     try:
         result = session.request(method=method, url=url, data=data, files=files).json()
@@ -29,11 +31,13 @@ def _fetch(session, url: str, method: str, data: Optional[Dict[str, Any]], files
         raise
     except Exception as e:
         return dict(message="Unknown Error")
+@rekognition.utils_alert.alert_slack_when_exception
 def fetch(url: str, method: str = 'GET', data: Optional[Dict[str, Any]] = None, files: Optional[Dict[str, IO]] = None) -> Dict[str, Any]:
     with requests.session() as session:
         return _fetch(session, url=url, method=method, data=data, files=files)
 
 
+@rekognition.utils_alert.alert_slack_when_exception
 def call_api(url_path: str, method: str = 'GET', data: Optional[Dict[str, Any]] = None, files: Optional[Dict[str, IO]] = None) -> Dict[str, Any]:
     if not url_path.startswith('/'):
         url_path = '/' + url_path

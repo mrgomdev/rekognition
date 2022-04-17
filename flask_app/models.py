@@ -7,11 +7,15 @@ from flask_app import app
 
 from flask import request, render_template
 
+import rekognition.utils_alert
+
 import flask_app
 if not flask_app.INCLUDE_VIEWS:
     class RenderTemplateResponse(TypedDict):
         error_code: int
         body: dict
+
+    @rekognition.utils_alert.alert_slack_when_exception
     def render_template(_: Optional[str], error_code: int, **kwargs) -> RenderTemplateResponse:
         assert 'error_code' not in kwargs
         return dict(error_code=error_code, body=kwargs)
@@ -35,10 +39,10 @@ def upload_post():
         file = request.files['file']
         image_bytes = utils.convert_image_bytes_popular(file.read())
         result: search_face.ParsedSearchFaceResponse = search_face.search_face_by_image(image_bytes=image_bytes)
-    except utils_boto3.RequestError as e:
-        return render_template('upload.html', error_code=-1, message=str(e))
-    except Exception as e:
-        return render_template('upload.html', error_code=-1, message=str(e))
+    except utils_boto3.RequestError:
+        raise
+    except Exception:
+        raise
 
     if result is None:
         message = f"Face detected, but cannot identify him/her."
