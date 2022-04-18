@@ -23,7 +23,7 @@ def suggest_line_width(size: Tuple[float, float]) -> int:
     return max(1, int(longer * 0.01))
 
 
-@rekognition.utils_alert.alert_slack_when_exception
+@rekognition.utils_alert.alert_slack_when_exception(will_raise=False)
 def main():
     file = st.file_uploader('Image of the star you are watching.', type=streamlit_config.image_types)
 

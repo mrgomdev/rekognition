@@ -1,4 +1,4 @@
-from typing import Callable, Any, Dict, Optional
+from typing import Callable, Any, Dict, Optional, Union
 import traceback
 import functools
 import datetime
@@ -64,15 +64,26 @@ def alert_slack_exception(exception: Exception, already_alerted_exception: Optio
         alert_slack(**kwargs)
 
 
-def alert_slack_when_exception(func: Callable) -> Callable:
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs) -> Any:
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            alert_slack_exception(e, function_call=f"{func.__name__}({', '.join(json.dumps(arg, default=str_limited) for arg in args)}, { {key: json.dumps(value, default=str_limited) for key, value in kwargs.items()} })")
-            raise
-    return wrapper
+def alert_slack_when_exception(func_or: Optional[Union[bool, Callable]] = None, will_raise: Optional[bool] = None) -> Callable:
+    if isinstance(func_or, bool):
+        assert will_raise is None
+        return functools.partial(alert_slack_when_exception, will_raise=func_or)
+    elif func_or is None:
+        assert will_raise is not None
+        return functools.partial(alert_slack_when_exception, will_raise=will_raise)
+    else:
+        assert hasattr(func_or, '__call__')
+        if will_raise is None:
+            will_raise = True
+        @functools.wraps(func_or)
+        def wrapper(*args, **kwargs) -> Any:
+            try:
+                return func_or(*args, **kwargs)
+            except Exception as e:
+                alert_slack_exception(e, function_call=f"{func_or.__name__}({', '.join(json.dumps(arg, default=str_limited) for arg in args)}, { {key: json.dumps(value, default=str_limited) for key, value in kwargs.items()} })")
+                if will_raise:
+                    raise
+        return wrapper
 
 
 alert_slack(logging_level=logging.INFO, message="Slack alert is running.")
