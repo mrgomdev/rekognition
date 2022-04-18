@@ -22,14 +22,21 @@ class ErrorResponse(Exception):
 @rekognition.utils_alert.alert_slack_when_exception
 def _fetch(session, url: str, method: str, data: Optional[Dict[str, Any]], files: Optional[Dict[str, IO]]) -> Dict[str, Any]:
     try:
-        result = session.request(method=method, url=url, data=data, files=files).json()
+        result = session.request(method=method, url=url, data=data, files=files)
+    except requests.exceptions.ConnectionError as e:
+        masking_exception = requests.exceptions.ConnectionError(f'Error on connect to {method} {url}. Original exception: {type(e)}: {e}')
+        raise masking_exception from None
+    except Exception:
+        raise
+    try:
+        result = result.json()
         if result['error_code'] != 0:
             raise ErrorResponse(error_code=result['error_code'], body=result.get('body'))
         return result['body']
-    except ErrorResponse as e:
+    except ErrorResponse:
         raise
-    except Exception as e:
-        return dict(message="Unknown Error")
+    except Exception:
+        raise
 @rekognition.utils_alert.alert_slack_when_exception
 def fetch(url: str, method: str = 'GET', data: Optional[Dict[str, Any]] = None, files: Optional[Dict[str, IO]] = None) -> Dict[str, Any]:
     with requests.session() as session:
