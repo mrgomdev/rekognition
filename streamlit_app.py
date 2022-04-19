@@ -1,6 +1,16 @@
 import io
 from typing import TypedDict, Tuple
 
+import gettext
+_ = gettext.gettext
+
+try:
+    localizator = gettext.translation('base', localedir='locales', languages=['kr'])
+    localizator.install()
+    _ = localizator.gettext
+except Exception as e:
+    pass
+
 from PIL import Image, ImageDraw
 
 import streamlit as st
@@ -25,7 +35,8 @@ def suggest_line_width(size: Tuple[float, float]) -> int:
 
 @rekognition.utils_alert.alert_slack_when_exception(will_raise=False)
 def main():
-    file = st.file_uploader('Image of the star you are watching.', type=streamlit_config.image_types)
+    st.markdown(_('# 지금 보이는 스타는 누구일까요?'))
+    file = st.file_uploader(_("알고 싶은 스타가 보이는 이미지를 업로드해주세요"), type=streamlit_config.image_types)
 
     if file is not None:
         file_bytes = file.read()
@@ -33,7 +44,7 @@ def main():
             matches_response: flask_app.models.UploadPostPayload = utils_streamlit.call_api(url_path='/upload', method='POST', files=dict(file=file_bytes))
         except Exception as e:
             rekognition.utils_alert.alert_slack_exception(e)
-            st.write('Error on receiving result.')
+            st.write(_("결과를 받는 중에 문제가 발생했습니다. 10초 후 다시 시도해주세요."))
             return
 
         column1, column2 = st.columns(2)
@@ -58,7 +69,7 @@ def main():
                     similarity = each_match['Similarity']
                 except Exception as e:
                     rekognition.utils_alert.alert_slack_exception(exception=e)
-                    st.write("Error occured. Please contact the developer.")
+                    st.write(_("에러가 발생했습니다. 개발자에게 연락해주세요."))
                 else:
                     st.write(idol.repr_name, similarity)
 
