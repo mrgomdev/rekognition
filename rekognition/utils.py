@@ -11,7 +11,8 @@ def convert_image_bytes_popular(image_bytes: bytes) -> bytes:
     for each_length in image.size:
         zoom = min(zoom, MAX_IMAGE_BYTES_LENGTH / each_length)
     if zoom < 0.9:
-        image = image.resize(size=(image.size[0] * zoom, image.size[1] * zoom))
+        assert image.size[0] * zoom > 10 and image.size[1] * zoom > 10, f'Size of image is too small {image.size}, zoom={zoom}.'
+        image = image.resize(size=(int(image.size[0] * zoom), int(image.size[1] * zoom)))
 
     output_format = image.format if image.format in ['JPEG', 'PNG'] else 'PNG'
     buffer = io.BytesIO()
