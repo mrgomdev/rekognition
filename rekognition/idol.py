@@ -9,7 +9,7 @@ REKOGNITION_EXTERNAL_IMAGE_ID_REGEX = re.compile(r'[a-zA-Z0-9_.\-:]+')
 
 @dataclass(frozen=True)
 class Idol:
-    repr_name: str
+    idol_id: str
     image_s3_bucket_name: str
     image_s3_object_key: str
     image_id: Optional[str] = None
@@ -17,7 +17,7 @@ class Idol:
 
     EXTERNAL_IMAGE_ID_SEPARATOR: ClassVar[str] = ':SEP:'
     EXTERNAL_IMAGE_ID_DIRECTORY_SEPARATOR: ClassVar[str] = ':DIR:'
-    KEYS_FOR_EXTERNAL_IMAGE_ID: ClassVar[tuple[str]] = ('repr_name', 'image_s3_bucket_name', 'image_s3_object_key')
+    KEYS_FOR_EXTERNAL_IMAGE_ID: ClassVar[tuple[str]] = ('idol_id', 'image_s3_bucket_name', 'image_s3_object_key')
 
     @classmethod
     def from_external_image_id(cls, external_image_id: str, image_id: Optional[str] = None, face_id: Optional[str] = None) -> Idol:

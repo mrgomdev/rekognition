@@ -58,9 +58,9 @@ def upload_post():
 
 class DetailPayload(TypedDict):
     markdown: str
-@app.route('/detail/<repr_name>')
-def detail(repr_name: str):
-    s3_object_key = f'{config.idols_profile_root_path}/{repr_name}/detail.md'
+@app.route('/detail/<idol_id>')
+def detail(idol_id: str):
+    s3_object_key = f'{config.idols_profile_root_path}/{idol_id}/detail.md'
     returned = utils_boto3.download_s3(bucket_name=config.idols_bucket_name, key=s3_object_key)
     return render_template('', error_code=0, markdown=returned.decode())
 
