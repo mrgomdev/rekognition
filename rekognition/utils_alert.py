@@ -10,7 +10,10 @@ logging.getLogger().setLevel(logging.INFO)
 
 import requests
 
-ALERT = True
+try:
+    from . import config
+except ImportError:
+    import config
 
 ALERT_NAME = os.environ.get('ALERT_NAME', socket.gethostname())
 
@@ -36,7 +39,7 @@ def to_slack_message_body(body: Optional[dict] = None, already_escaped_str: bool
 
 
 def alert_slack(logging_level: int = logging.ERROR, already_escaped_str: bool = False, **kwargs):
-    if ALERT:
+    if config.ALERT:
         webhooks_url = os.environ['SLACK_MODI_ALERTS_URL']
         with requests.session() as session:
             try:

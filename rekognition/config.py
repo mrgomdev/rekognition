@@ -1,4 +1,5 @@
 VERBOSE = True
+ALERT = True
 
 idols_collection_id = 'modi-idols'
 idols_bucket_name = 'modi-idols-bucket'
