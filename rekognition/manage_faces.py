@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Union, IO, Optional
 
 import os
 import glob
@@ -33,13 +34,19 @@ def clear_all_idols() -> None:
 
 
 @utils_alert.alert_slack_when_exception
-def upload_idol(image_path: str, idol_id: str) -> dict:
+def upload_idol_local(image_path: str, idol_id: str) -> dict:
     image_s3_bucket_name = config.idols_bucket_name
     image_s3_object_key = os.path.join(config.idols_profile_root_path, idol_id, os.path.basename(image_path))
     if os.sep == '\\' and os.sep in image_s3_object_key:
         image_s3_object_key = image_s3_object_key.replace(os.sep, '/')
-    utils_boto3.upload_s3(file=image_path, bucket_name=image_s3_bucket_name, key=image_s3_object_key)
+    with open(image_path, 'rb') as file:
+        image = file.read()
+    return upload_idol(image=image, idol_id=idol_id, image_s3_bucket_name=image_s3_bucket_name, image_s3_object_key=image_s3_object_key)
 
+
+@utils_alert.alert_slack_when_exception
+def upload_idol(image: Union[str, IO], idol_id: str, image_s3_bucket_name: str, image_s3_object_key: str, content_type: Optional[str] = None):
+    utils_boto3.upload_s3(file=image, bucket_name=image_s3_bucket_name, key=image_s3_object_key, content_type=content_type)
     idol = Idol(idol_id=idol_id, image_s3_bucket_name=config.idols_bucket_name, image_s3_object_key=image_s3_object_key)
 
     collection_id = config.idols_collection_id
@@ -53,7 +60,7 @@ def upload_idols_from_directory(root_path: str) -> list[dict]:
     for dir_path in filter(os.path.isdir, tqdm(glob.glob(os.path.join(root_path, '*')))):
         idol_id = os.path.basename(dir_path)
         for image_path in filter(os.path.isfile, glob.glob(os.path.join(dir_path, '*'))):
-            idols_responses.append(upload_idol(image_path=image_path, idol_id=idol_id))
+            idols_responses.append(upload_idol_local(image_path=image_path, idol_id=idol_id))
 
     return idols_responses
 
