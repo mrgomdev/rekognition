@@ -26,7 +26,7 @@ def main():
             with st.spinner():
                 upload()
 
-        st.text_input(label='idol_id', placeholder='jennie-blackpink', key='idol_id')
+        st.text_input(label='idol_id', placeholder='jennie-blackpink', key='idol_id', on_change=lambda: st.session_state.__setitem__('idol_id', st.session_state.idol_id.strip()))
 
         url = st.text_input(label="url", placeholder="https://...", key='url')
         def clear_url():
@@ -43,24 +43,22 @@ def upload():
     try:
         if st.session_state.idol_id == '':
             raise ValueError("idol_id must not be empty!")
-
-        with requests.session() as session:
-            response = session.get(url=st.session_state.url)
-            if not response.headers['Content-Type'].startswith('image/'):
-                raise ValueError(f"Should be image! {response.headers['Content-Type']}")
-            image = Image.open(io.BytesIO(response.content))
-            image = rekognition.utils.convert_pillow_image_popular(image)
-
-        content_type = Image.MIME[image.format]
-        image_bytes_io = io.BytesIO()
-        image.save(image_bytes_io, format=image.format)
-        image_bytes_io.seek(0)
-
         idol_id = st.session_state.idol_id
-        image_s3_bucket_name = rekognition.config.idols_bucket_name
-        image_s3_object_key = os.path.join(rekognition.config.idols_profile_root_path, idol_id, os.path.basename(urllib.parse.urlparse(url=st.session_state.url).path)).replace('\\', '/')
 
-        result = rekognition.manage_faces.upload_idol(image=image_bytes_io, idol_id=idol_id, image_s3_bucket_name=image_s3_bucket_name, image_s3_object_key=image_s3_object_key, content_type=content_type)
+        if st.session_state.url != '':
+            content_type, image_bytes_io = load_image_from_url()
+
+            image_s3_bucket_name = rekognition.config.idols_bucket_name
+            image_s3_object_key = os.path.join(rekognition.config.idols_profile_root_path, idol_id, os.path.basename(urllib.parse.urlparse(url=st.session_state.url).path)).replace('\\', '/')
+
+            result = rekognition.manage_faces.upload_idol(image=image_bytes_io, idol_id=idol_id, image_s3_bucket_name=image_s3_bucket_name, image_s3_object_key=image_s3_object_key, content_type=content_type)
+        else:
+            #TODO:
+            raise NotImplementedError('File uploader')
+            file = st.session_state[f'file_uploader{st.session_state.file_uploader_key_index}']
+            assert file is not None
+            result = rekognition.manage_faces.upload_idol_local(image_path=file.path, idol_id=st.session_state.idol_id)
+
         face_meta = result['FaceRecords'][0]['Face']
 
         db_dict = {
@@ -77,6 +75,20 @@ def upload():
         st.success(dict(face=face_meta, idol_id=idol_id, image_s3_bucket_name=image_s3_bucket_name, image_s3_object_key=image_s3_object_key, content_type=content_type))
     except Exception as e:
         st.exception(e)
+
+
+def load_image_from_url():
+    with requests.session() as session:
+        response = session.get(url=st.session_state.url)
+        if not response.headers['Content-Type'].startswith('image/'):
+            raise ValueError(f"Should be image! {response.headers['Content-Type']}")
+        image = Image.open(io.BytesIO(response.content))
+        image = rekognition.utils.convert_pillow_image_popular(image)
+    content_type = Image.MIME[image.format]
+    image_bytes_io = io.BytesIO()
+    image.save(image_bytes_io, format=image.format)
+    image_bytes_io.seek(0)
+    return content_type, image_bytes_io
 
 
 if __name__ == '__main__':
