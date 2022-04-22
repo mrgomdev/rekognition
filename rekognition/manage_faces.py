@@ -50,8 +50,13 @@ def upload_idol(image: Union[str, IO], idol_id: str, image_s3_bucket_name: str, 
     idol = Idol(idol_id=idol_id, image_s3_bucket_name=config.idols_bucket_name, image_s3_object_key=image_s3_object_key)
 
     collection_id = config.idols_collection_id
-    client = boto3.client('rekognition')
-    return client.index_faces(Image=dict(S3Object=dict(Bucket=idol.image_s3_bucket_name, Name=idol.image_s3_object_key)), CollectionId=collection_id, ExternalImageId=idol.to_external_image_id(), DetectionAttributes=['ALL'], MaxFaces=1)
+    try:
+        client = boto3.client('rekognition')
+        return client.index_faces(Image=dict(S3Object=dict(Bucket=idol.image_s3_bucket_name, Name=idol.image_s3_object_key)), CollectionId=collection_id, ExternalImageId=idol.to_external_image_id(), DetectionAttributes=['ALL'], MaxFaces=1)
+    except:
+        client = boto3.client('s3')
+        client.delete_object(Bucket=config.idols_bucket_name, Key=image_s3_object_key)
+        raise
 
 
 @utils_alert.alert_slack_when_exception
