@@ -11,6 +11,8 @@ import rekognition.utils_boto3
 import rekognition.utils
 import rekognition.manage_faces
 
+import utils_streamlit
+
 
 SESSION_STATE_INITS = dict(file_uploader_key_index=0)
 for key, value in SESSION_STATE_INITS.items():
@@ -92,4 +94,5 @@ def load_image_from_url():
 
 
 if __name__ == '__main__':
-    main()
+    if utils_streamlit.ask_admin_password():
+        main()

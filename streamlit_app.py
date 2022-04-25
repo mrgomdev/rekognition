@@ -83,4 +83,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    if utils_streamlit.ask_admin_password_if_needed():
+        main()
