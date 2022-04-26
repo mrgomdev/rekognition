@@ -1,7 +1,9 @@
-from typing import Optional, TypedDict, List
+from typing import Optional, TypedDict, List, Type, Collection, Union
 
 import os
 from icecream import ic
+
+import requests
 
 from flask_app import app
 
@@ -56,13 +58,31 @@ def upload_post():
     return render_template('upload.html', error_code=error_code, message=message, **response_payload)
 
 
+UnicodeEncodedStr = Type[str]
+class IdolMeta(TypedDict, total=False):
+    idol_id: str
+    idol_display_name: UnicodeEncodedStr
+    namu_url: str
+    tags: str
+    has_instagram_individual: int
+    instagram_url: str
+    weibo_url: str
+def build_markdown_from_idol_meta(idol_meta: IdolMeta) -> str:
+    markdown_str = f"## {idol_meta['idol_id']}\n- [namu {idol_meta['idol_display_name']}]({idol_meta['namu_url']})\n- tags: {idol_meta['tags']}"
+    if 'instagram_url' in idol_meta:
+        markdown_str += f"\n- [Instagram 🏠]({idol_meta['instagram_url']})"
+    return markdown_str
 class DetailPayload(TypedDict):
     markdown: str
 @app.route('/detail/<idol_id>')
 def detail(idol_id: str):
-    s3_object_key = f'{config.idols_profile_root_path}/{idol_id}/detail.md'
-    returned = utils_boto3.download_s3(bucket_name=config.idols_bucket_name, key=s3_object_key)
-    return render_template('', error_code=0, markdown=returned.decode())
+    with requests.session() as request_session:
+        response = request_session.get(url=f'https://modi-11e0c-default-rtdb.firebaseio.com/idols-meta/{idol_id}.json')
+
+        assert response.text != 'null'
+
+        idol_meta = IdolMeta(idol_id=idol_id, **response.json())
+    return render_template('', error_code=0, markdown=build_markdown_from_idol_meta(idol_meta=idol_meta))
 
 
 @app.route('/resetgomdev')

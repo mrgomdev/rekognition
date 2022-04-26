@@ -72,13 +72,12 @@ def main():
                     rekognition.utils_alert.alert_slack_exception(exception=e)
                     st.write(_("에러가 발생했습니다. 개발자에게 연락해주세요."))
                 else:
-                    st.write(idol.idol_id, similarity)
-
                     try:
                         detail_response: flask_app.models.DetailPayload = utils_streamlit.call_api(url_path=f'/detail/{idol.idol_id}')
                         detail_md = detail_response['markdown']
                     except Exception as e:
                         rekognition.utils_alert.alert_slack_exception(exception=e)
+                        st.write(idol.idol_id)
                     else:
                         st.markdown(detail_md)
 
