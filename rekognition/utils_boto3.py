@@ -95,6 +95,13 @@ def to_abs_bounding_box_corners(bounding_box: BoundingBox, size: Tuple[float, fl
     return int(x0_abs), int(y0_abs), int(x1_abs), int(y1_abs)
 
 
+def margin_bounding_box(bounding_box: BoundingBox, ratio: float = 0.1) -> BoundingBox:
+    margin_size = bounding_box['Width'] * ratio, bounding_box['Height'] * ratio
+    assert all(each >= 0 for each in margin_size)
+    margined_bounding_box = BoundingBox(Width=bounding_box['Width'] + 2 * margin_size[0], Height=bounding_box['Height'] + 2 * margin_size[1], Left=bounding_box['Left'] - margin_size[0], Top=bounding_box['Top'] - margin_size[1])
+    return margined_bounding_box
+
+
 def join_relative_bounding_boxes(*bounding_boxes) -> BoundingBox:
     if len(bounding_boxes) == 0:
         raise ValueError('No bounding_box provided.')

@@ -98,9 +98,7 @@ def get_all_detected_faces(image: Image.Image) -> List[Tuple[utils_boto3.Boundin
     bounding_boxes = detect_faces_by_image(image=image)
     cropped_faces = []
     for bounding_box in bounding_boxes:
-        margin_size = bounding_box['Width'] * 0.1, bounding_box['Height'] * 0.1
-        assert all(each >= 0 for each in margin_size)
-        margined_bounding_box = utils_boto3.BoundingBox(Width=bounding_box['Width'] + 2 * margin_size[0], Height=bounding_box['Height'] + 2 * margin_size[1], Left=bounding_box['Left'] - margin_size[0], Top=bounding_box['Top'] - margin_size[1])
+        margined_bounding_box = utils_boto3.margin_bounding_box(bounding_box=bounding_box)
         abs_margined_bounding_box_corners = utils_boto3.to_abs_bounding_box_corners(bounding_box=margined_bounding_box, size=image.size)
         cropped_image = image.crop(box=abs_margined_bounding_box_corners)
         cropped_faces.append((margined_bounding_box, cropped_image))
