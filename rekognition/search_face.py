@@ -1,5 +1,7 @@
-from typing import Optional, TypedDict, List
+import io
+from typing import Optional, TypedDict, List, Union, Tuple
 
+from PIL import Image
 from icecream import ic
 # ic = print
 
@@ -80,3 +82,60 @@ if __name__ == '__main__':
     image_bytes = utils.convert_image_bytes_popular(image_bytes=image_bytes)
 
     ic(search_face_by_image(image_bytes=image_bytes))
+
+
+def detect_faces_by_image(image: Union[Image.Image, bytes]) -> List[utils_boto3.BoundingBox]:
+    image_bytes = utils.as_image_bytes(image)
+    assert isinstance(image_bytes, bytes) and len(image_bytes) > 100
+
+    client = boto3.client('rekognition')
+    response = client.detect_faces(Image={'Bytes': image_bytes})
+    bounding_boxes: List[utils_boto3.BoundingBox] = [face_detail['BoundingBox'] for face_detail in response['FaceDetails']]
+    return bounding_boxes
+
+
+def get_all_detected_faces(image: Image.Image) -> List[Tuple[utils_boto3.BoundingBox, Image.Image]]:
+    bounding_boxes = detect_faces_by_image(image=image)
+    cropped_faces = []
+    for bounding_box in bounding_boxes:
+        margin_size = bounding_box['Width'] * 0.1, bounding_box['Height'] * 0.1
+        assert all(each >= 0 for each in margin_size)
+        margined_bounding_box = utils_boto3.BoundingBox(Width=bounding_box['Width'] + 2 * margin_size[0], Height=bounding_box['Height'] + 2 * margin_size[1], Left=bounding_box['Left'] - margin_size[0], Top=bounding_box['Top'] - margin_size[1])
+        abs_margined_bounding_box_corners = utils_boto3.to_abs_bounding_box_corners(bounding_box=margined_bounding_box, size=image.size)
+        cropped_image = image.crop(box=abs_margined_bounding_box_corners)
+        cropped_faces.append((margined_bounding_box, cropped_image))
+    return cropped_faces
+
+
+def search_multiple_faces_by_image(image_bytes: bytes, threshold: Optional[int] = None) -> List[ParsedSearchFaceResponse]:
+    image = Image.open(io.BytesIO(image_bytes))
+
+    searcheds = []
+    faces = get_all_detected_faces(image=image)
+    for face_bounding_box, face_image in faces:
+        try:
+            searched = search_face_by_image(image_bytes=utils.pillow_to_bytes(face_image), threshold=threshold)
+            searched['SearchedFaceBoundingBox'] = utils_boto3.join_relative_bounding_boxes(face_bounding_box, searched['SearchedFaceBoundingBox'])
+
+            searcheds.append(searched)
+        except NoMatchedFaceError:
+            pass
+    return searcheds
+
+
+if __name__ == '__main__':
+    image_path = '/home/gimun/Downloads/image_readtop_2021_1136232_16394818474883815.jpg'
+    image = Image.open(image_path)
+    searcheds = search_multiple_faces_by_image(image_bytes=utils.pillow_to_bytes(image=image))
+    ic(searcheds)
+
+    from PIL import ImageDraw
+    def suggest_line_width(size: Tuple[float, float]) -> int:
+        longer = max(size)
+        return max(1, int(longer * 0.01))
+
+    draw = ImageDraw.Draw(im=image,)
+    for searched in searcheds:
+        bounding_box_corners = utils_boto3.to_abs_bounding_box_corners(bounding_box=searched['SearchedFaceBoundingBox'], size=image.size)
+        draw.rounded_rectangle(xy=bounding_box_corners, radius=suggest_line_width(image.size) * 4, width=suggest_line_width(image.size))
+    image.show()
