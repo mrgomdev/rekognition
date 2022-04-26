@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional, Union, Tuple
 import io
 
 from PIL import Image
@@ -39,16 +39,22 @@ def convert_image_bytes_popular(image_bytes: bytes) -> bytes:
 
 
 @utils_alert.alert_slack_when_exception
-def convert_pillow_image_popular(image: Image.Image) -> Image.Image:
-    zoom = 1
-    for each_length in image.size:
-        zoom = min(zoom, MAX_IMAGE_LENGTH / each_length)
-    old_image_format = image.format
-    if zoom < 0.9:
+def roughly_fit_to(image: Image.Image, target_size: Tuple[float, float], zoom_threshold: float = 0.9) -> Image.Image:
+    zoom = 1.
+    zoom = min(zoom, target_size[0] / image.size[0])
+    zoom = min(zoom, target_size[1] / image.size[1])
+
+    if zoom < zoom_threshold:
         assert image.size[0] * zoom > 10 and image.size[1] * zoom > 10, f'Size of image is too small {image.size}, zoom={zoom}.'
         image = image.resize(size=(int(image.size[0] * zoom), int(image.size[1] * zoom)))
     else:
         image = image.copy()
+    return image
+
+@utils_alert.alert_slack_when_exception
+def convert_pillow_image_popular(image: Image.Image) -> Image.Image:
+    old_image_format = image.format
+    image = roughly_fit_to(image, target_size=(MAX_IMAGE_LENGTH, MAX_IMAGE_LENGTH))
     image.format = old_image_format
 
     if all(allowed not in image.format.lower() for allowed in ['jpeg', 'jpg', 'png']):
