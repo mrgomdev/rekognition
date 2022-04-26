@@ -68,7 +68,7 @@ class IdolMeta(TypedDict, total=False):
     instagram_url: str
     weibo_url: str
 def build_markdown_from_idol_meta(idol_meta: IdolMeta) -> str:
-    markdown_str = f"## {idol_meta['idol_id']}\n- [namu {idol_meta['idol_display_name']}]({idol_meta['namu_url']})\n- tags: {idol_meta['tags']}"
+    markdown_str = f"## {idol_meta['idol_display_name']}\n- [namu {idol_meta['idol_display_name']}]({idol_meta['namu_url']})\n- tags: {idol_meta['tags']}"
     if 'instagram_url' in idol_meta:
         markdown_str += f"\n- [Instagram 🏠]({idol_meta['instagram_url']})"
     return markdown_str
