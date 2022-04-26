@@ -82,7 +82,9 @@ class BoundingBox(TypedDict):
     Height: float
     Left: float
     Top: float
-def to_abs_bounding_box_corners(bounding_box: BoundingBox, size: Tuple[float, float]) -> Tuple[float, float, float, float]:
+
+
+def to_abs_bounding_box_corners(bounding_box: BoundingBox, size: Tuple[float, float]) -> Tuple[int, int, int, int]:
     x0_rel = bounding_box['Left']
     y0_rel = bounding_box['Top']
     x1_rel = bounding_box['Left'] + bounding_box['Width']
@@ -90,7 +92,21 @@ def to_abs_bounding_box_corners(bounding_box: BoundingBox, size: Tuple[float, fl
 
     x0_abs, x1_abs = [(x * size[0]) for x in [x0_rel, x1_rel]]
     y0_abs, y1_abs = [(y * size[1]) for y in [y0_rel, y1_rel]]
-    return x0_abs, y0_abs, x1_abs, y1_abs
+    return int(x0_abs), int(y0_abs), int(x1_abs), int(y1_abs)
+
+
+def join_relative_bounding_boxes(*bounding_boxes) -> BoundingBox:
+    if len(bounding_boxes) == 0:
+        raise ValueError('No bounding_box provided.')
+    joined = BoundingBox(Width=1., Height=1., Left=0., Top=0.)
+
+    for bounding_box in bounding_boxes:
+        if any(value > 10. for value in bounding_box.values()):
+            raise ValueError(f'Expcted relative bounding_box. Got {bounding_box}')
+        width, height = joined['Width'] * bounding_box['Width'], joined['Height'] * bounding_box['Height']
+        left, top = joined['Left'] + joined['Width'] * bounding_box['Left'], joined['Top'] + joined['Height'] * bounding_box['Top']
+        joined = BoundingBox(Width=width, Height=height, Left=left, Top=top)
+    return joined
 
 
 class Face(TypedDict):
