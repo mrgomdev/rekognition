@@ -42,44 +42,51 @@ def main():
     if file is not None:
         file_bytes = file.read()
         try:
-            matches_response: flask_app.models.UploadPostPayload = utils_streamlit.call_api(url_path='/upload', method='POST', files=dict(file=file_bytes))
+            searched_response: flask_app.models.UploadPostPayload = utils_streamlit.call_api(url_path='/upload', method='POST', files=dict(file=file_bytes))
         except Exception as e:
             rekognition.utils_alert.alert_slack_exception(e)
             st.write(_("결과를 받는 중에 문제가 발생했습니다. 10초 후 다시 시도해주세요."))
             return
 
-        column1, column2 = st.columns(2)
-        with column1:
-            try:
-                canvas_image = Image.open(io.BytesIO(file_bytes))
-                zoom = 400 / canvas_image.size[1]
-                if zoom * canvas_image.size[0] > 400:
-                    zoom = 400 / canvas_image.size[0]
-                canvas_image = canvas_image.resize(size=(int(canvas_image.size[0] * zoom), int(canvas_image.size[1] * zoom)))
-                draw = ImageDraw.Draw(canvas_image)
-                bounding_box_corners = rekognition.utils_boto3.to_abs_bounding_box_corners(bounding_box=matches_response['searched_face_bounding_box'], size=canvas_image.size)
+        if len(searched_response['searcheds']) == 0:
+            st.error(_("얼굴을 찾을 수 없습니다."))
+        else:
+            image = Image.open(io.BytesIO(file_bytes))
+
+            canvas_image = image.copy()
+            canvas_image = rekognition.utils.roughly_fit_to(canvas_image, (400, 400), zoom_threshold=1.)
+            draw = ImageDraw.Draw(canvas_image)
+            for searched_each in searched_response['searcheds']:
+                bounding_box_corners = rekognition.utils_boto3.to_abs_bounding_box_corners(bounding_box=searched_each['searched_face_bounding_box'], size=canvas_image.size)
                 draw.rounded_rectangle(xy=bounding_box_corners, radius=suggest_line_width(canvas_image.size) * 4, width=suggest_line_width(canvas_image.size))
-            except Exception as e:
-                rekognition.utils_alert.alert_slack_exception(exception=e)
-                canvas_image = rekognition.utils.get_error_image()
             st.image(image=canvas_image)
-        with column2:
-            for each_match in matches_response['matches']:
-                try:
-                    idol = rekognition.Idol.from_external_image_id(each_match['Face']['ExternalImageId'])
-                    similarity = each_match['Similarity']
-                except Exception as e:
-                    rekognition.utils_alert.alert_slack_exception(exception=e)
-                    st.write(_("에러가 발생했습니다. 개발자에게 연락해주세요."))
-                else:
-                    try:
-                        detail_response: flask_app.models.DetailPayload = utils_streamlit.call_api(url_path=f'/detail/{idol.idol_id}')
-                        detail_md = detail_response['markdown']
-                    except Exception as e:
-                        rekognition.utils_alert.alert_slack_exception(exception=e)
-                        st.write(idol.idol_id)
-                    else:
-                        st.markdown(detail_md)
+
+            containers_searched_result = [st.container() for _ in range(len(searched_response['searcheds']))]
+            for container, searched_each in zip(containers_searched_result, searched_response['searcheds']):
+                column1, column2 = container.columns([1, 2])
+                with column1:
+                    margined_face_bounding_box = rekognition.utils_boto3.margin_bounding_box(bounding_box=searched_each['searched_face_bounding_box'])
+                    margined_face_bounding_box_corners = rekognition.utils_boto3.to_abs_bounding_box_corners(margined_face_bounding_box, size=image.size)
+                    face_image = rekognition.utils.roughly_fit_to(image.crop(box=margined_face_bounding_box_corners), (150, 150), zoom_threshold=1.)
+                    st.image(face_image)
+                with column2:
+                    for each_match in searched_each['matches']:
+                        try:
+                            idol = rekognition.Idol.from_external_image_id(each_match['Face']['ExternalImageId'])
+                            similarity = each_match['Similarity']
+                        except Exception as e:
+                            rekognition.utils_alert.alert_slack_exception(exception=e)
+                            st.write(_("에러가 발생했습니다. 개발자에게 연락해주세요."))
+                        else:
+                            try:
+                                detail_response: flask_app.models.DetailPayload = utils_streamlit.call_api(url_path=f'/detail/{idol.idol_id}')
+                                detail_md = detail_response['markdown']
+                            except Exception as e:
+                                rekognition.utils_alert.alert_slack_exception(exception=e)
+                                st.write(idol.idol_id)
+                            else:
+                                st.markdown(detail_md)
+                container.markdown("---")
 
 
 if __name__ == '__main__':

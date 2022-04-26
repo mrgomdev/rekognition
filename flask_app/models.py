@@ -27,9 +27,11 @@ CURRENT_USAGE = 0
 MAX_USAGE = int(os.environ.get('MAX_USAGE', 50))
 
 
-class UploadPostPayload(TypedDict):
+class SearchedEach(TypedDict):
     matches: List[utils_boto3.FaceMatch]
     searched_face_bounding_box: utils_boto3.BoundingBox
+class UploadPostPayload(TypedDict):
+    searcheds: List[SearchedEach]
 @app.route('/upload', methods=['POST'])
 def upload_post():
     global CURRENT_USAGE
@@ -40,21 +42,23 @@ def upload_post():
     try:
         file = request.files['file']
         image_bytes = utils.convert_image_bytes_popular(file.read())
-        result: search_face.ParsedSearchFaceResponse = search_face.search_face_by_image(image_bytes=image_bytes)
+        result: List[search_face.ParsedSearchFaceResponse] = search_face.search_multiple_faces_by_image(image_bytes=image_bytes)
+    except search_face.NoFaceInSearchingError:
+        return render_template('upload.html', error_code=-1, message=f"Face detected, but cannot identify him/her.")
     except utils_boto3.RequestError:
         raise
     except Exception:
         raise
 
-    if result is None:
-        message = f"Face detected, but cannot identify him/her."
-        response_payload = dict()
-        error_code = -1
-    else:
-        message = f"Found. Looks like {result['MostFaceMatch']['Face']['ExternalImageId']}. {result['MostFaceMatch']['Similarity']:3.0f}% similar."
-        assert hasattr(result['MostFaceMatch'], 'keys') and hasattr(result['MostFaceMatch'], 'values'), "Result is expected as dict-like."
-        response_payload = UploadPostPayload(matches=[result['MostFaceMatch']], searched_face_bounding_box=result['SearchedFaceBoundingBox'])
-        error_code = 0
+    assert result is not None
+    message = f"Found {len(result)} faces."
+    searcheds = []
+    for idx, each in enumerate(result):
+        message += f"{idx}th: Looks like {each['MostFaceMatch']['Face']['ExternalImageId']}. {each['MostFaceMatch']['Similarity']:3.0f}% similar."
+        assert hasattr(each['MostFaceMatch'], 'keys') and hasattr(each['MostFaceMatch'], 'values'), "Result is expected as dict-like."
+        searcheds.append(SearchedEach(matches=[each['MostFaceMatch']], searched_face_bounding_box=each['SearchedFaceBoundingBox']))
+    response_payload = UploadPostPayload(searcheds=searcheds)
+    error_code = 0
     return render_template('upload.html', error_code=error_code, message=message, **response_payload)
 
 
