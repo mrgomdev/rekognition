@@ -1,3 +1,4 @@
+from typing import Optional, Union
 import io
 
 from PIL import Image
@@ -10,15 +11,31 @@ except ImportError:
     import utils_alert
 
 
+def pillow_to_bytes(image: Image.Image, format: Optional[str] = None) -> bytes:
+    buffer = io.BytesIO()
+    if format is None:
+        format = image.format if image.format is not None else 'JPEG'
+    image.save(buffer, format=format)
+    return buffer.getvalue()
+
+
+def as_image_bytes(image: Union[Image.Image, bytes]) -> bytes:
+    if isinstance(image, Image.Image):
+        image_bytes = pillow_to_bytes(image=image, format='JPEG')
+    elif isinstance(image, bytes):
+        image_bytes = image
+    else:
+        raise TypeError(f"Union[Image.Image, bytes] Expected. Got {type(image)}")
+    return image_bytes
+
+
 MAX_IMAGE_LENGTH = 1920
 @utils_alert.alert_slack_when_exception
 def convert_image_bytes_popular(image_bytes: bytes) -> bytes:
     image = convert_pillow_image_popular(Image.open(io.BytesIO(image_bytes)))
 
     output_format = image.format if image.format in ['JPEG', 'PNG'] else 'PNG'
-    buffer = io.BytesIO()
-    image.save(buffer, format=output_format)
-    return buffer.getvalue()
+    return pillow_to_bytes(image=image, format=output_format)
 
 
 @utils_alert.alert_slack_when_exception
