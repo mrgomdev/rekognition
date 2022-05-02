@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Optional, ClassVar, Any
+from typing import Optional, ClassVar, Any, Sequence, Dict
 
 REKOGNITION_EXTERNAL_IMAGE_ID_REGEX = re.compile(r'[a-zA-Z0-9_.\-:]+')
 
@@ -19,7 +19,7 @@ class Idol:
     EXTERNAL_IMAGE_ID_DIRECTORY_SEPARATOR: ClassVar[str] = ':DIR:'
     EXTERNAL_IMAGE_ID_PERCENT: ClassVar[str] = ':PER:'
     EXTERNAL_IMAGE_ID_TILDE: ClassVar[str] = ':TILDE:'
-    KEYS_FOR_EXTERNAL_IMAGE_ID: ClassVar[tuple[str]] = ('idol_id', 'image_s3_bucket_name', 'image_s3_object_key')
+    KEYS_FOR_EXTERNAL_IMAGE_ID: ClassVar[Sequence[str]] = ('idol_id', 'image_s3_bucket_name', 'image_s3_object_key')
 
     @classmethod
     def from_external_image_id(cls, external_image_id: str, image_id: Optional[str] = None, face_id: Optional[str] = None) -> Idol:
@@ -30,7 +30,7 @@ class Idol:
 
     CONFIDENCE_THRESHOLD: ClassVar[float] = 90.
     @classmethod
-    def from_face_dict_aws(cls, face_dict: dict[str, Any]) -> Idol:
+    def from_face_dict_aws(cls, face_dict: Dict[str, Any]) -> Idol:
         assert face_dict.get('Confidence') > cls.CONFIDENCE_THRESHOLD
         idol = Idol.from_external_image_id(external_image_id=face_dict['ExternalImageId'], image_id=face_dict.get('ImageId'), face_id=face_dict.get('FaceId'))
         return idol

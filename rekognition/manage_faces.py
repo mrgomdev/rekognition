@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Union, IO, Optional
+from typing import Union, IO, Optional, List
 
 import os
 import glob
@@ -60,7 +60,7 @@ def upload_idol(image: Union[str, IO], idol_id: str, image_s3_bucket_name: str, 
 
 
 @utils_alert.alert_slack_when_exception
-def upload_idols_from_directory(root_path: str) -> list[dict]:
+def upload_idols_from_directory(root_path: str) -> List[dict]:
     idols_responses = []
     for dir_path in filter(os.path.isdir, tqdm(glob.glob(os.path.join(root_path, '*')))):
         idol_id = os.path.basename(dir_path)
