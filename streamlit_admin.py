@@ -38,7 +38,7 @@ def main():
             st.session_state.file_uploader_key_index += 1
 
         # TODO:
-        file = st.file_uploader(label='image', accept_multiple_files=False, key=f'file_uploader{st.session_state.file_uploader_key_index}', on_change=clear_url)
+        # file = st.file_uploader(label='image', accept_multiple_files=False, key=f'file_uploader{st.session_state.file_uploader_key_index}', on_change=clear_url)
 
 
 def upload():
