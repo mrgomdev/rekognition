@@ -23,7 +23,7 @@ def list_faces(collection_id: str, fresh: bool, max_results=100) -> List[dict]:
             faces.extend(list(response['Faces']))
             if 'NextToken' in response:
                 next_token = response['NextToken']
-                response = client.list_faces(CollectionId=collection_id, MaxResults=max_results, next_token=next_token)
+                response = client.list_faces(CollectionId=collection_id, MaxResults=max_results, NextToken=next_token)
             else:
                 response = None
         _LIST_FACES[collection_id] = faces
