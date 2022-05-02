@@ -22,6 +22,10 @@ class Idol:
     KEYS_FOR_EXTERNAL_IMAGE_ID: ClassVar[Sequence[str]] = ('idol_id', 'image_s3_bucket_name', 'image_s3_object_key')
 
     @classmethod
+    def escape_path(cls, path_external_id: str) -> str:
+        return path_external_id.replace(cls.EXTERNAL_IMAGE_ID_DIRECTORY_SEPARATOR, '/')
+
+    @classmethod
     def from_external_image_id(cls, external_image_id: str, image_id: Optional[str] = None, face_id: Optional[str] = None) -> Idol:
         assert cls.EXTERNAL_IMAGE_ID_SEPARATOR in external_image_id
         splited = external_image_id.split(cls.EXTERNAL_IMAGE_ID_SEPARATOR)
