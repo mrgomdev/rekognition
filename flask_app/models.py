@@ -78,14 +78,21 @@ def build_markdown_from_idol_meta(idol_meta: IdolMeta) -> str:
     return markdown_str
 class DetailPayload(TypedDict):
     markdown: str
+_detail_session = requests.session()
 @app.route('/detail/<idol_id>')
 def detail(idol_id: str):
-    with requests.session() as request_session:
-        response = request_session.get(url=f'https://modi-11e0c-default-rtdb.firebaseio.com/idols-meta/{idol_id}.json')
+    global _detail_session
 
-        assert response.text != 'null'
+    try:
+        response = _detail_session.get(url=f'https://modi-11e0c-default-rtdb.firebaseio.com/idols-meta/{idol_id}.json')
+    except Exception as e:
+        rekognition.utils_alert.alert_slack_exception(e)
+        _detail_session = requests.session()
+        response = _detail_session.get(url=f'https://modi-11e0c-default-rtdb.firebaseio.com/idols-meta/{idol_id}.json')
 
-        idol_meta = IdolMeta(idol_id=idol_id, **response.json())
+    assert response.text != 'null'
+
+    idol_meta = IdolMeta(idol_id=idol_id, **response.json())
     return render_template('', error_code=0, markdown=build_markdown_from_idol_meta(idol_meta=idol_meta))
 
 
