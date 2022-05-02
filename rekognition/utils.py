@@ -15,6 +15,8 @@ def pillow_to_bytes(image: Image.Image, format: Optional[str] = None) -> bytes:
     buffer = io.BytesIO()
     if format is None:
         format = image.format if image.format is not None else 'JPEG'
+    if format == 'JPEG' and image.mode != 'RGB':
+        image = image.convert('RGB')
     image.save(buffer, format=format)
     return buffer.getvalue()
 
