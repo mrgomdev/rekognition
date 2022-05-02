@@ -46,7 +46,7 @@ class ParsedSearchFaceResponse(TypedDict):
     MostFaceMatch: utils_boto3.FaceMatch
 @utils_alert.alert_slack_when_exception
 @utils_boto3.handle_request_error
-def _search_face_by_image(image_bytes: bytes, collection_id: str, max_matches: int = 10, threshold: int = 40) -> ParsedSearchFaceResponse:
+def _search_face_by_image(image_bytes: bytes, collection_id: str, max_matches: int = 10, threshold: int = 90) -> ParsedSearchFaceResponse:
     client = boto3.client('rekognition')
     try:
         response: SearchFaceResponse = client.search_faces_by_image(CollectionId=collection_id, Image={'Bytes': image_bytes}, FaceMatchThreshold=threshold, MaxFaces=max_matches)
