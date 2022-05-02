@@ -1,9 +1,14 @@
 from __future__ import annotations
+
+import logging
 from typing import Union, IO, Optional, List
 
 import os
 import glob
+import re
 from tqdm import tqdm
+
+import click
 
 import boto3
 
@@ -12,13 +17,13 @@ try:
     from . import config
     from .idol import Idol
     from . import utils_boto3
-    from .caching_boto3 import list_faces
+    from .caching_boto3 import list_faces, list_idols
 except ImportError:
     import utils_alert
     import config
     from idol import Idol
     import utils_boto3
-    from caching_boto3 import list_faces
+    from caching_boto3 import list_faces, list_idols
 if not config.VERBOSE:
     def tqdm(iterable=None, *_, **__):
         return iterable
@@ -79,3 +84,40 @@ if __name__ == '__main__' and True:
     for face in faces:
         idol = Idol.from_face_dict_aws(face_dict=face)
         print(idol)
+
+
+@utils_alert.alert_slack_when_exception
+def list_faces_of_idol(idol_id_regex: str, fresh: bool) -> List[Idol]:
+    idols = list_idols(collection_id=config.idols_collection_id, fresh=fresh)
+    return [idol for idol in idols if re.fullmatch(pattern=idol_id_regex, string=idol.idol_id)]
+
+
+@utils_alert.alert_slack_when_exception
+def delete_face(face_id_regex: str, fresh: bool, idol_id: Optional[str] = None):
+    collection_id = config.idols_collection_id
+
+    idols: List[Idol] = list_idols(collection_id=collection_id, fresh=fresh)
+    filtered_idols = [idol for idol in idols if re.fullmatch(pattern=face_id_regex, string=idol.face_id)]
+
+    if len(filtered_idols) == 0:
+        raise ValueError(f'No idol matched {face_id_regex}.')
+    if len(filtered_idols) > 1:
+        raise NotImplementedError(f'Multiple matches: {filtered_idols}')
+
+    assert len(filtered_idols) == 1
+    idol = filtered_idols[0]
+    if idol_id != idol.idol_id:
+        raise ValueError(f"Not matched idol_id({idol_id}) for face_id ({idol.face_id}")
+    click.confirm(text=f"Delete {idol}?", abort=True)
+
+    try:
+        client = boto3.client('rekognition')
+        response = client.delete_faces(FaceIds=[idol.face_id], CollectionId=collection_id)
+    except Exception as e:
+        logging.warning(str(e))
+
+    try:
+        client = boto3.client('s3')
+        response = client.delete_object(Bucket=idol.image_s3_bucket_name, Key=Idol.escape_path(idol.image_s3_object_key))
+    except Exception as e:
+        logging.warning(str(e))
