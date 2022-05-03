@@ -48,7 +48,7 @@ def alert_slack(logging_level: int = logging.ERROR, already_escaped_str: bool = 
             except Exception as e:
                 logging.error(session.post(url=webhooks_url, json=to_slack_message_body(message="Alert! but exception during post.", exception=f"{type(e)}: {e}", already_escaped_str=already_escaped_str)))
     else:
-        print(to_slack_message_body(kwargs, already_escaped_str=already_escaped_str)['text'])
+        logging.log(logging_level, (to_slack_message_body(kwargs, already_escaped_str=already_escaped_str)['text']))
 
 
 def format_exception_str(exception: Exception) -> Dict[str, str]:

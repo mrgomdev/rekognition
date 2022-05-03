@@ -66,7 +66,7 @@ def _search_face_by_image(image_bytes: bytes, collection_id: str, max_matches: i
         # TODO:
         # assert len(face_matches) == 1
         if config.VERBOSE:
-            print(face_matches)
+            utils_alert.logging.info(str(face_matches))
         return dict(MostFaceMatch=face_matches[0], SearchedFaceBoundingBox=response['SearchedFaceBoundingBox'])
 
 
