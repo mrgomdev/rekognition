@@ -16,7 +16,7 @@ from PIL import Image, ImageDraw
 import streamlit as st
 st.set_page_config(page_title="modi, 모두의 아이돌", page_icon="🎙️", menu_items={"Get help": None, "Report a bug": "https://forms.gle/kHDsXG9ctMXs75AJ9", "About": "# 모디 modi 🎙️\n[노션 페이지](https://jumto.notion.site/Modi-293e5832633a402f8e2de0278eaee975)"})
 
-import flask_app.models
+import flask_app
 import rekognition.utils_alert
 import rekognition
 import rekognition.utils
@@ -42,7 +42,7 @@ def main():
     if file is not None:
         file_bytes = file.read()
         try:
-            searched_response: flask_app.models.UploadPostPayload = utils_streamlit.call_api(url_path='/upload', method='POST', files=dict(file=file_bytes))
+            searched_response: flask_app.UploadPostPayload = utils_streamlit.call_api(url_path='/upload', method='POST', files=dict(file=file_bytes))
         except Exception as e:
             rekognition.utils_alert.alert_slack_exception(e)
             st.write(_("결과를 받는 중에 문제가 발생했습니다. 10초 후 다시 시도해주세요."))
@@ -79,7 +79,7 @@ def main():
                             st.write(_("에러가 발생했습니다. 개발자에게 연락해주세요."))
                         else:
                             try:
-                                detail_response: flask_app.models.DetailPayload = utils_streamlit.call_api(url_path=f'/detail/{idol.idol_id}')
+                                detail_response: flask_app.DetailPayload = utils_streamlit.call_api(url_path=f'/detail/{idol.idol_id}')
                                 detail_md = detail_response['markdown']
                             except Exception as e:
                                 rekognition.utils_alert.alert_slack_exception(exception=e)

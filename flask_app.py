@@ -1,35 +1,46 @@
-from typing import Optional, TypedDict, List, Type, Collection, Union
+from typing import Optional, TypedDict, List, Type
 
 import os
 from icecream import ic
 
 import requests
 
-from flask_app import app
-
 from flask import request, render_template
+from flask import Flask
 
 import rekognition.utils_alert
+import rekognition
 
-import flask_app
-if not flask_app.INCLUDE_VIEWS:
-    class RenderTemplateResponse(TypedDict):
-        error_code: int
-        body: dict
 
-    @rekognition.utils_alert.alert_slack_when_exception
-    def render_template(_: Optional[str], error_code: int, **kwargs) -> RenderTemplateResponse:
-        assert 'error_code' not in kwargs
-        return dict(error_code=error_code, body=kwargs)
-from rekognition import search_face, utils, utils_boto3, config
+app = Flask(__name__)
+
+
+class Response(TypedDict):
+    error_code: int
+    body: dict
+
+
+@rekognition.utils_alert.alert_slack_when_exception
+def respond(_: Optional[str], error_code: int, **kwargs) -> Response:
+    assert 'error_code' not in kwargs
+    return dict(error_code=error_code, body=kwargs)
+
 
 CURRENT_USAGE = 0
 MAX_USAGE = int(os.environ.get('MAX_USAGE', 50))
 
 
+@app.route('/resetgomdev')
+def resetgomdev():
+    global CURRENT_USAGE
+    CURRENT_USAGE = 0
+
+    return respond('', error_code=0, message=f"Reset done. CURRENT_USAGE={CURRENT_USAGE}, MAX_USAGE={MAX_USAGE}")
+
+
 class SearchedEach(TypedDict):
-    matches: List[utils_boto3.FaceMatch]
-    searched_face_bounding_box: utils_boto3.BoundingBox
+    matches: List[rekognition.utils_boto3.FaceMatch]
+    searched_face_bounding_box: rekognition.utils_boto3.BoundingBox
 class UploadPostPayload(TypedDict):
     searcheds: List[SearchedEach]
 @app.route('/upload', methods=['POST'])
@@ -41,11 +52,11 @@ def upload_post():
     ic(CURRENT_USAGE)
     try:
         file = request.files['file']
-        image_bytes = utils.convert_image_bytes_popular(file.read())
-        result: List[search_face.ParsedSearchFaceResponse] = search_face.search_multiple_faces_by_image(image_bytes=image_bytes)
-    except search_face.NoFaceInSearchingError:
-        return render_template('upload.html', error_code=-1, message=f"Face detected, but cannot identify him/her.")
-    except utils_boto3.RequestError:
+        image_bytes = rekognition.utils.convert_image_bytes_popular(file.read())
+        result: List[rekognition.search_face.ParsedSearchFaceResponse] = rekognition.search_face.search_multiple_faces_by_image(image_bytes=image_bytes)
+    except rekognition.search_face.NoFaceInSearchingError:
+        return respond('upload.html', error_code=-1, message=f"Face detected, but cannot identify him/her.")
+    except rekognition.utils_boto3.RequestError:
         raise
     except Exception:
         raise
@@ -59,7 +70,7 @@ def upload_post():
         searcheds.append(SearchedEach(matches=[each['MostFaceMatch']], searched_face_bounding_box=each['SearchedFaceBoundingBox']))
     response_payload = UploadPostPayload(searcheds=searcheds)
     error_code = 0
-    return render_template('upload.html', error_code=error_code, message=message, **response_payload)
+    return respond('upload.html', error_code=error_code, message=message, **response_payload)
 
 
 UnicodeEncodedStr = Type[str]
@@ -93,12 +104,19 @@ def detail(idol_id: str):
     assert response.text != 'null'
 
     idol_meta = IdolMeta(idol_id=idol_id, **response.json())
-    return render_template('', error_code=0, markdown=build_markdown_from_idol_meta(idol_meta=idol_meta))
+    return respond('', error_code=0, markdown=build_markdown_from_idol_meta(idol_meta=idol_meta))
 
 
-@app.route('/resetgomdev')
-def resetgomdev():
-    global CURRENT_USAGE
-    CURRENT_USAGE = 0
+@app.route('/hello')
+def hello():
+    return respond('', error_code=0, message='Hello World')
 
-    return render_template('', error_code=0, message=f"Reset done. CURRENT_USAGE={CURRENT_USAGE}, MAX_USAGE={MAX_USAGE}")
+
+@app.errorhandler(500)
+def server_error(e):
+    assert 'werkzeug.exceptions.InternalServerError' in str(type(e))
+    original_exception = e.original_exception
+    try:
+        return respond('', error_code=-1, body=dict(exception=f'{type(original_exception)}: {str(original_exception)}')), 500
+    finally:
+        rekognition.utils_alert.alert_slack_exception(error_code=-1, exception=original_exception)
