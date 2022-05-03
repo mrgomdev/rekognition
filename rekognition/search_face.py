@@ -5,8 +5,6 @@ from PIL import Image
 from icecream import ic
 # ic = print
 
-import boto3
-
 try:
     from . import utils
     from . import utils_alert
@@ -47,7 +45,7 @@ class ParsedSearchFaceResponse(TypedDict):
 @utils_alert.alert_slack_when_exception
 @utils_boto3.handle_request_error
 def _search_face_by_image(image_bytes: bytes, collection_id: str, max_matches: int = 10, threshold: int = 90) -> ParsedSearchFaceResponse:
-    client = boto3.client('rekognition')
+    client = utils_boto3.client('rekognition')
     try:
         response: SearchFaceResponse = client.search_faces_by_image(CollectionId=collection_id, Image={'Bytes': image_bytes}, FaceMatchThreshold=threshold, MaxFaces=max_matches)
     except client.exceptions.InvalidParameterException as e:
@@ -90,7 +88,7 @@ def detect_faces_by_image(image: Union[Image.Image, bytes]) -> List[utils_boto3.
     image_bytes = utils.as_image_bytes(image)
     assert isinstance(image_bytes, bytes) and len(image_bytes) > 100
 
-    client = boto3.client('rekognition')
+    client = utils_boto3.client('rekognition')
     response = client.detect_faces(Image={'Bytes': image_bytes})
     bounding_boxes: List[utils_boto3.BoundingBox] = [face_detail['BoundingBox'] for face_detail in response['FaceDetails']]
     return bounding_boxes

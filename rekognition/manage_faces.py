@@ -10,8 +10,6 @@ from tqdm import tqdm
 
 import click
 
-import boto3
-
 try:
     from . import utils_alert
     from . import config
@@ -31,7 +29,7 @@ if not config.VERBOSE:
 
 @utils_alert.alert_slack_when_exception
 def _clear_all_idols(collection_id: str) -> None:
-    client = boto3.client('rekognition')
+    client = utils_boto3.client('rekognition')
     client.delete_collection(CollectionId=collection_id)
     client.create_collection(CollectionId=collection_id)
 def clear_all_idols() -> None:
@@ -56,10 +54,10 @@ def upload_idol(image: Union[str, IO], idol_id: str, image_s3_bucket_name: str, 
 
     collection_id = config.idols_collection_id
     try:
-        client = boto3.client('rekognition')
+        client = utils_boto3.client('rekognition')
         return client.index_faces(Image=dict(S3Object=dict(Bucket=idol.image_s3_bucket_name, Name=idol.image_s3_object_key)), CollectionId=collection_id, ExternalImageId=idol.to_external_image_id(), DetectionAttributes=['ALL'], MaxFaces=1)
     except:
-        client = boto3.client('s3')
+        client = utils_boto3.client('s3')
         client.delete_object(Bucket=config.idols_bucket_name, Key=image_s3_object_key)
         raise
 
@@ -111,13 +109,13 @@ def delete_face(face_id_regex: str, fresh: bool, idol_id: Optional[str] = None):
     click.confirm(text=f"Delete {idol}?", abort=True)
 
     try:
-        client = boto3.client('rekognition')
+        client = utils_boto3.client('rekognition')
         response = client.delete_faces(FaceIds=[idol.face_id], CollectionId=collection_id)
     except Exception as e:
         logging.warning(str(e))
 
     try:
-        client = boto3.client('s3')
+        client = utils_boto3.client('s3')
         response = client.delete_object(Bucket=idol.image_s3_bucket_name, Key=Idol.escape_path(idol.image_s3_object_key))
     except Exception as e:
         logging.warning(str(e))

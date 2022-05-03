@@ -1,14 +1,14 @@
 from typing import List, Dict
 
-import boto3
-
 try:
     from . import utils_alert
     from . import utils_boto3
+    from . import utils_firebase_realtime_db
     from .idol import Idol
 except ImportError:
     import utils_alert
     import utils_boto3
+    import utils_firebase_realtime_db
     from idol import Idol
 
 
@@ -17,7 +17,7 @@ _LIST_FACES: Dict[str, List[utils_boto3.Face]] = dict()
 @utils_boto3.handle_request_error
 def list_faces(collection_id: str, fresh: bool, max_results=100) -> List[utils_boto3.Face]:
     if fresh or collection_id not in _LIST_FACES:
-        client = boto3.client('rekognition')
+        client = utils_boto3.client('rekognition')
 
         faces: List[utils_boto3.Face] = []
         response = client.list_faces(CollectionId=collection_id, MaxResults=max_results)

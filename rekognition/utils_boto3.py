@@ -5,12 +5,15 @@ import functools
 import os
 
 import botocore.exceptions
+import botocore.client
 import boto3
 
 try:
     from . import utils_alert
+    from . import utils_firebase_realtime_db
 except Exception:
     import utils_alert
+    import utils_firebase_realtime_db
 
 
 ClientError = botocore.exceptions.ClientError
@@ -48,6 +51,34 @@ def handle_request_error(func: Callable[..., Any]) -> Callable[..., Any]:
     return wrapper
 
 
+class LoggingBoto3Client:
+    def __init__(self, boto3_client: botocore.client.BaseClient):
+        self.boto3_client = boto3_client
+
+    def __getattr__(self, item_name):
+        ret = getattr(self.boto3_client, item_name)
+        if hasattr(ret, '__call__'):
+            @functools.wraps(ret)
+            def wrapper(*args, **kwargs):
+                result = ret(*args, **kwargs)
+
+                if len(args) > 0:
+                    kwargs['args'] = args
+                log_item = utils_firebase_realtime_db.LogItem(client_class_name=self.boto3_client.__class__.__name__, client_api_name=item_name, request=kwargs, response=result)
+                utils_firebase_realtime_db.post_log(log_item)
+                return result
+            return wrapper
+        else:
+            return ret
+
+
+def logging_client(*args, **kwargs) -> LoggingBoto3Client:
+    return LoggingBoto3Client(boto3.client(*args, **kwargs))
+
+
+client = logging_client
+
+
 @utils_alert.alert_slack_when_exception
 def upload_s3(file: Union[str, IO], bucket_name: str, key: str, content_type: Optional[str] = None, content_encoding: Optional[str] = None) -> dict:
     if isinstance(file, str):
@@ -59,7 +90,7 @@ def upload_s3(file: Union[str, IO], bucket_name: str, key: str, content_type: Op
     else:
         file_should_be_closed = False
 
-    s3_client = boto3.client('s3')
+    s3_client = client('s3')
     if os.sep == '\\':
         key = key.replace(os.sep, '/')
     kwargs = {key: value for key, value in dict(ContentType=content_type, ContentEncoding=content_encoding).items() if value is not None}
@@ -72,7 +103,7 @@ def upload_s3(file: Union[str, IO], bucket_name: str, key: str, content_type: Op
 
 @utils_alert.alert_slack_when_exception
 def download_s3(bucket_name: str, key: str) -> bytes:
-    s3_client = boto3.client('s3')
+    s3_client = client('s3')
     returned = s3_client.get_object(Bucket=bucket_name, Key=key)['Body'].read()
     return returned
 
