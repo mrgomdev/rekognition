@@ -36,7 +36,7 @@ def to_slack_message_body(body: Optional[dict] = None, already_escaped_str: bool
     if body is not None:
         kwargs.update(body)
     to_str = escape_slack if already_escaped_str else str
-    return dict(text=f"• [{ALERT_NAME}] {datetime.datetime.now(timezone('Asia/Seoul')).strftime('%Y %m%d %H:%M:%S %Z')}\n" + to_str('\n'.join([f"> {key}\n ```{kwargs[key]}``` " for key in kwargs])))
+    return dict(text=f"• [{ALERT_NAME}] {datetime.datetime.now(timezone('Asia/Seoul')).strftime('%Y %m%d %H:%M:%S.%f %Z')}\n" + to_str('\n'.join([f"> {key}\n ```{kwargs[key]}``` " for key in kwargs])))
 
 
 def alert_slack(logging_level: int = logging.ERROR, already_escaped_str: bool = False, **kwargs):
