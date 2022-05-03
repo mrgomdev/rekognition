@@ -1,4 +1,4 @@
-from typing import Callable, Any, Dict, Optional, Union
+from typing import Callable, Any, Dict, Optional, Union, Sequence
 import traceback
 import functools
 from pytz import timezone
@@ -26,6 +26,17 @@ def str_limited(obj) -> str:
         return 'TOO LONG'
     else:
         return str(obj)
+
+
+def deep_str_limited(a_dict: Union[str, Sequence, dict]) -> Union[str, list, dict]:
+    if isinstance(a_dict, dict):
+        return {key: deep_str_limited(value) for key, value in a_dict.items()}
+    elif isinstance(a_dict, str) or isinstance(a_dict, bytes):
+        return str_limited(a_dict)
+    elif hasattr(a_dict, '__iter__') and hasattr(a_dict, '__len__'):
+        return [deep_str_limited(item) for item in a_dict]
+    else:
+        return str_limited(a_dict)
 
 
 def escape_slack(message: str) -> str:
