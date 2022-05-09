@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import enum
 import mimetypes
 from typing import Optional, Callable, Any, IO, Union, TypedDict, Tuple
@@ -57,19 +59,35 @@ def handle_request_error(func: Callable[..., Any]) -> Callable[..., Any]:
     return wrapper
 
 
+class ProxyBoto3Client:
+    def __init__(self, boto3_client: Union[botocore.client.BaseClient, ProxyBoto3Client]):
+        self.boto3_client = boto3_client
+
+    def __getattr__(self, item_name):
+        return getattr(self.boto3_client, item_name)
+
+    @property
+    def service_id(self) -> str:
+        if hasattr(self.boto3_client, 'service_id'):
+            return self.boto3_client.service_id
+        else:
+            return self.boto3_client.meta.service_model.service_id
+
+
+def proxy_client(*args, **kwargs) -> ProxyBoto3Client:
+    return ProxyBoto3Client(boto3.client(*args, **kwargs))
+
+
 class PausedError(OSError):
     pass
 
 
-class ControlledBoto3Client:
+class ControlledBoto3Client(ProxyBoto3Client):
     _flag_session = requests.session()
 
     FLAGS_URL_PREFIX = config.firebase_realtime_db_configs_url_prefix
     class Flag(enum.Enum):
         PAUSE_CHARGED_AWS_API = 'pause-charged-aws-api'
-
-    def __init__(self, boto3_client: botocore.client.BaseClient):
-        self.boto3_client = boto3_client
 
     CONTROLLING_FLAGS = MappingProxyType({
         'index_faces': Flag.PAUSE_CHARGED_AWS_API,
@@ -104,13 +122,10 @@ class ControlledBoto3Client:
 
 
 def controlled_client(*args, **kwargs) -> ControlledBoto3Client:
-    return ControlledBoto3Client(boto3.client(*args, **kwargs))
+    return ControlledBoto3Client(proxy_client(*args, **kwargs))
 
 
-class LoggingBoto3Client:
-    def __init__(self, boto3_client: Union[botocore.client.BaseClient, ControlledBoto3Client]):
-        self.boto3_client = boto3_client
-
+class LoggingBoto3Client(ProxyBoto3Client):
     def __getattr__(self, item_name):
         ret = getattr(self.boto3_client, item_name)
         if hasattr(ret, '__call__'):
@@ -120,7 +135,7 @@ class LoggingBoto3Client:
 
                 if len(args) > 0:
                     kwargs['args'] = args
-                log_item = utils_firebase_realtime_db.LogItem(client_class_name=self.boto3_client.__class__.__name__, client_api_name=item_name, request=kwargs, response=result)
+                log_item = utils_firebase_realtime_db.LogItem(client_service_id=self.service_id, client_api_name=item_name, request=kwargs, response=result)
                 utils_firebase_realtime_db.post_log(log_item)
                 return result
             return wrapper
@@ -129,11 +144,11 @@ class LoggingBoto3Client:
 
 
 def logging_client(*args, **kwargs) -> LoggingBoto3Client:
-    return LoggingBoto3Client(boto3.client(*args, **kwargs))
+    return LoggingBoto3Client(proxy_client(*args, **kwargs))
 
 
 def client(*args, **kwargs):
-    return LoggingBoto3Client(ControlledBoto3Client(boto3.client(*args, **kwargs)))
+    return LoggingBoto3Client(ControlledBoto3Client(proxy_client(*args, **kwargs)))
 
 
 @utils_alert.alert_slack_when_exception

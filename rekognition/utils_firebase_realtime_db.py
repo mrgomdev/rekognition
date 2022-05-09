@@ -18,7 +18,7 @@ except ImportError:
 
 @dataclasses.dataclass
 class LogItem:
-    client_class_name: str
+    client_service_id: str
     client_api_name: str
     request: dict
     response: Optional[dict]
