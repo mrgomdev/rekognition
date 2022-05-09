@@ -117,6 +117,6 @@ def server_error(e):
     assert 'werkzeug.exceptions.InternalServerError' in str(type(e))
     original_exception = e.original_exception
     try:
-        return respond('', error_code=-1, body=dict(exception=f'{type(original_exception)}: {str(original_exception)}')), 500
+        return respond('', error_code=-1, exception=f'{type(original_exception)}: {str(original_exception)}'), 500
     finally:
         rekognition.utils_alert.alert_slack_exception(error_code=-1, exception=original_exception)
