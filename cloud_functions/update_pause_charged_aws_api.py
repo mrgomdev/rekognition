@@ -38,3 +38,5 @@ def update_hot_charged_logs(event, context):
     response = _session.put('https://modi-11e0c-default-rtdb.firebaseio.com/rekognition/flags/pause-charged-aws-api.json', json=pause_charged_aws_api)
     print(response)
     assert response.ok
+
+    #TODO: Alert in slack
