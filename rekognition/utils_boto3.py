@@ -1,8 +1,12 @@
+import enum
 import mimetypes
 from typing import Optional, Callable, Any, IO, Union, TypedDict, Tuple
 
+from types import MappingProxyType
 import functools
 import os
+
+import requests
 
 import botocore.exceptions
 import botocore.client
@@ -11,9 +15,11 @@ import boto3
 try:
     from . import utils_alert
     from . import utils_firebase_realtime_db
+    from . import config
 except Exception:
     import utils_alert
     import utils_firebase_realtime_db
+    import config
 
 
 ClientError = botocore.exceptions.ClientError
@@ -51,8 +57,58 @@ def handle_request_error(func: Callable[..., Any]) -> Callable[..., Any]:
     return wrapper
 
 
-class LoggingBoto3Client:
+class PausedError(OSError):
+    pass
+
+
+class ControlledBoto3Client:
+    _flag_session = requests.session()
+
+    FLAGS_URL_PREFIX = config.firebase_realtime_db_configs_url_prefix
+    class Flag(enum.Enum):
+        PAUSE_CHARGED_AWS_API = 'pause-charged-aws-api'
+
     def __init__(self, boto3_client: botocore.client.BaseClient):
+        self.boto3_client = boto3_client
+
+    CONTROLLING_FLAGS = MappingProxyType({
+        'index_faces': Flag.PAUSE_CHARGED_AWS_API,
+        'search_faces_by_image': Flag.PAUSE_CHARGED_AWS_API,
+        'search_faces': Flag.PAUSE_CHARGED_AWS_API,
+        'detect_faces': Flag.PAUSE_CHARGED_AWS_API
+    })
+
+    def is_paused(self, flag: Flag) -> bool:
+        assert isinstance(flag, self.Flag)
+        url = os.path.join(self.FLAGS_URL_PREFIX, f'{flag.value}.json').replace(os.sep, '/')
+        response = self._flag_session.get(url)
+        ret = response.json()
+        if not isinstance(ret, bool):
+            raise ValueError(f'Invalid value for flag. {dict(url=url, response_content=response.content)}')
+        return ret
+
+    def __getattr__(self, item_name):
+        ret = getattr(self.boto3_client, item_name)
+        if item_name in self.CONTROLLING_FLAGS:
+            if not hasattr(ret, '__call__'):
+                raise TypeError(f'Controlled method should be a Callable. Got {item_name}: {type(ret)}')
+            if self.is_paused(flag=self.CONTROLLING_FLAGS[item_name]):
+                raise PausedError(f'For {item_name}, {self.CONTROLLING_FLAGS[item_name]} is True')
+
+            @functools.wraps(ret)
+            def wrapper(*args, **kwargs):
+                return ret(*args, **kwargs)
+            return wrapper
+        else:
+            return ret
+
+
+def controlled_client(*args, **kwargs) -> ControlledBoto3Client:
+    return ControlledBoto3Client(boto3.client(*args, **kwargs))
+
+
+class LoggingBoto3Client:
+    def __init__(self, boto3_client: Union[botocore.client.BaseClient, ControlledBoto3Client]):
         self.boto3_client = boto3_client
 
     def __getattr__(self, item_name):
@@ -76,7 +132,8 @@ def logging_client(*args, **kwargs) -> LoggingBoto3Client:
     return LoggingBoto3Client(boto3.client(*args, **kwargs))
 
 
-client = logging_client
+def client(*args, **kwargs):
+    return LoggingBoto3Client(ControlledBoto3Client(boto3.client(*args, **kwargs)))
 
 
 @utils_alert.alert_slack_when_exception

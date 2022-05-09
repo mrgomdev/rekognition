@@ -43,6 +43,14 @@ def main():
         file_bytes = file.read()
         try:
             searched_response: flask_app.UploadPostPayload = utils_streamlit.call_api(url_path='/upload', method='POST', files=dict(file=file_bytes))
+        except utils_streamlit.ErrorResponse as e:
+            if 'PausedError' in e.body['exception']:
+                st.write(_("요청이 너무 많아 일시적으로 잠겨있습니다. 10분 뒤 다시 시도해주세요."))
+                return
+            else:
+                rekognition.utils_alert.alert_slack_exception(e)
+                st.write(_("결과를 받는 중에 문제가 발생했습니다. 10초 후 다시 시도해주세요."))
+                return
         except Exception as e:
             rekognition.utils_alert.alert_slack_exception(e)
             st.write(_("결과를 받는 중에 문제가 발생했습니다. 10초 후 다시 시도해주세요."))
