@@ -30,6 +30,10 @@ CURRENT_USAGE = 0
 MAX_USAGE = int(os.environ.get('MAX_USAGE', 50))
 
 
+class TooHotError(OSError):
+    pass
+
+
 @app.route('/resetgomdev')
 def resetgomdev():
     global CURRENT_USAGE
@@ -48,7 +52,7 @@ def upload_post():
     global CURRENT_USAGE
     CURRENT_USAGE += 1
     if CURRENT_USAGE > MAX_USAGE:
-        exit(1)
+        raise TooHotError()
     ic(CURRENT_USAGE)
     try:
         file = request.files['file']

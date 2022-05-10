@@ -44,7 +44,7 @@ def main():
         try:
             searched_response: flask_app.UploadPostPayload = utils_streamlit.call_api(url_path='/upload', method='POST', files=dict(file=file_bytes))
         except utils_streamlit.ErrorResponse as e:
-            if 'PausedError' in e.body['exception']:
+            if any(locked_error in e.body['exception'] for locked_error in ['PausedError', 'TooHotError']):
                 st.write(_("요청이 너무 많아 일시적으로 잠겨있습니다. 10분 뒤 다시 시도해주세요."))
                 return
             else:

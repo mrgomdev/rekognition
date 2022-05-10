@@ -113,12 +113,7 @@ class ControlledBoto3Client(ProxyBoto3Client):
             if self.is_paused(flag=self.CONTROLLING_FLAGS[item_name]):
                 raise PausedError(f'For {item_name}, {self.CONTROLLING_FLAGS[item_name]} is True')
 
-            @functools.wraps(ret)
-            def wrapper(*args, **kwargs):
-                return ret(*args, **kwargs)
-            return wrapper
-        else:
-            return ret
+        return ret
 
 
 def controlled_client(*args, **kwargs) -> ControlledBoto3Client:
