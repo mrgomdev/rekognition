@@ -64,7 +64,10 @@ class ProxyBoto3Client:
         self.boto3_client = boto3_client
 
     def __getattr__(self, item_name):
-        return getattr(self.boto3_client, item_name)
+        if item_name in self.__dict__:
+            return getattr(self, item_name)
+        else:
+            return getattr(self.boto3_client, item_name)
 
     @property
     def service_id(self) -> str:
@@ -106,7 +109,7 @@ class ControlledBoto3Client(ProxyBoto3Client):
         return ret
 
     def __getattr__(self, item_name):
-        ret = getattr(self.boto3_client, item_name)
+        ret = super(ControlledBoto3Client, self).__getattr__(item_name)
         if item_name in self.CONTROLLING_FLAGS:
             if not hasattr(ret, '__call__'):
                 raise TypeError(f'Controlled method should be a Callable. Got {item_name}: {type(ret)}')
@@ -122,7 +125,7 @@ def controlled_client(*args, **kwargs) -> ControlledBoto3Client:
 
 class LoggingBoto3Client(ProxyBoto3Client):
     def __getattr__(self, item_name):
-        ret = getattr(self.boto3_client, item_name)
+        ret = super(LoggingBoto3Client, self).__getattr__(item_name)
         if hasattr(ret, '__call__'):
             @functools.wraps(ret)
             def wrapper(*args, **kwargs):
