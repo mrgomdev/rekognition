@@ -92,6 +92,7 @@ class ControlledBoto3Client(ProxyBoto3Client):
     _flag_session = requests.session()
 
     FLAGS_URL_PREFIX = config.firebase_realtime_db_configs_url_prefix
+
     class Flag(enum.Enum):
         PAUSE_CHARGED_AWS_API = 'pause-charged-aws-api'
 
@@ -214,7 +215,7 @@ def join_relative_bounding_boxes(*bounding_boxes) -> BoundingBox:
 
     for bounding_box in bounding_boxes:
         if any(value > 10. for value in bounding_box.values()):
-            raise ValueError(f'Expcted relative bounding_box. Got {bounding_box}')
+            raise ValueError(f'Expected relative bounding_box. Got {bounding_box}')
         width, height = joined['Width'] * bounding_box['Width'], joined['Height'] * bounding_box['Height']
         left, top = joined['Left'] + joined['Width'] * bounding_box['Left'], joined['Top'] + joined['Height'] * bounding_box['Top']
         joined = BoundingBox(Width=width, Height=height, Left=left, Top=top)

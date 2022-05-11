@@ -8,7 +8,7 @@ try:
     localizator = gettext.translation('base', localedir='locales', languages=['kr'])
     localizator.install()
     _ = localizator.gettext
-except Exception as e:
+except Exception:
     pass
 
 from PIL import Image, ImageDraw
@@ -69,7 +69,7 @@ def main():
                 draw.rounded_rectangle(xy=bounding_box_corners, radius=suggest_line_width(canvas_image.size) * 4, width=suggest_line_width(canvas_image.size))
             st.image(image=canvas_image)
 
-            containers_searched_result = [st.container() for _ in range(len(searched_response['searcheds']))]
+            containers_searched_result = [st.container() for __ in range(len(searched_response['searcheds']))]
             for container, searched_each in zip(containers_searched_result, searched_response['searcheds']):
                 column1, column2 = container.columns([1, 2])
                 with column1:

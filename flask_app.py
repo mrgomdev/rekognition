@@ -7,7 +7,7 @@ from icecream import ic
 import requests
 import requests.adapters
 
-from flask import request, render_template
+from flask import request
 from flask import Flask
 
 import rekognition.utils_alert
@@ -80,6 +80,8 @@ def upload_post():
 
 
 UnicodeEncodedStr = Type[str]
+
+
 class IdolMeta(TypedDict, total=False):
     idol_id: str
     idol_display_name: UnicodeEncodedStr
@@ -88,13 +90,19 @@ class IdolMeta(TypedDict, total=False):
     has_instagram_individual: int
     instagram_url: str
     weibo_url: str
+
+
 def build_markdown_from_idol_meta(idol_meta: IdolMeta) -> str:
     markdown_str = f"## {idol_meta['idol_display_name']}\n- [namu {idol_meta['idol_display_name']}]({idol_meta['namu_url']})\n- tags: {idol_meta['tags']}"
     if 'instagram_url' in idol_meta:
         markdown_str += f"\n- [Instagram 🏠]({idol_meta['instagram_url']})"
     return markdown_str
+
+
 class DetailPayload(TypedDict):
     markdown: str
+
+
 _detail_session = requests.session()
 _detail_session.mount(rekognition.config.firebase_realtime_db_idols_meta_prefix, rekognition.utils.build_retry_http_adapter())
 @app.route('/detail/<idol_id>')

@@ -33,6 +33,7 @@ class Idol:
         return cls(**dict(zip(cls.KEYS_FOR_EXTERNAL_IMAGE_ID, splited)), image_id=image_id, face_id=face_id)
 
     CONFIDENCE_THRESHOLD: ClassVar[float] = 90.
+
     @classmethod
     def from_face_dict_aws(cls, face_dict: Dict[str, Any]) -> Idol:
         assert face_dict.get('Confidence') > cls.CONFIDENCE_THRESHOLD
@@ -46,6 +47,7 @@ class Idol:
             ('%', self.EXTERNAL_IMAGE_ID_PERCENT),
             ('~', self.EXTERNAL_IMAGE_ID_TILDE)
         ]
+
         def encode(clause: str) -> str:
             for from_str, to_str in replacing_plans:
                 clause = clause.replace(from_str, to_str)

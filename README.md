@@ -4,7 +4,7 @@
 Logical model scripts for running backend
 - [rekognition/search_face.py](rekognition/search_face.py)
 
-## [flask_app](flask_app)
+## [flask_app.py](flask_app.py)
 1. API server in charge of models
 2. Basic frontend (When INCLUDE_VIEWS = True)
 3. Can be deployed in ec2

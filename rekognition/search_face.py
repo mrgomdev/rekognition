@@ -39,9 +39,13 @@ class SearchFaceResponse(TypedDict):
     SearchedFaceConfidence: float
     FaceMatches: List[utils_boto3.FaceMatch]
     ResponseMetadata: dict
+
+
 class ParsedSearchFaceResponse(TypedDict):
     SearchedFaceBoundingBox: utils_boto3.BoundingBox
     MostFaceMatch: utils_boto3.FaceMatch
+
+
 @utils_alert.alert_slack_when_exception
 @utils_boto3.handle_request_error
 def _search_face_by_image(image_bytes: bytes, collection_id: str, max_matches: int = 10, threshold: int = 90) -> ParsedSearchFaceResponse:
@@ -122,12 +126,13 @@ def search_multiple_faces_by_image(image_bytes: bytes, threshold: Optional[int] 
 
 
 if __name__ == '__main__':
+    from PIL import ImageDraw
+
     image_path = '/home/gimun/Downloads/image_readtop_2021_1136232_16394818474883815.jpg'
     image = Image.open(image_path)
     searcheds = search_multiple_faces_by_image(image_bytes=utils.pillow_to_bytes(image=image))
     ic(searcheds)
 
-    from PIL import ImageDraw
     def suggest_line_width(size: Tuple[float, float]) -> int:
         longer = max(size)
         return max(1, int(longer * 0.01))

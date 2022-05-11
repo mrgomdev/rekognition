@@ -41,10 +41,6 @@ def _fetch(session, url: str, method: str, data: Optional[Dict[str, Any]], files
         raise
     except Exception:
         raise
-@rekognition.utils_alert.alert_slack_when_exception
-def fetch(url: str, method: str = 'GET', data: Optional[Dict[str, Any]] = None, files: Optional[Dict[str, IO]] = None) -> Dict[str, Any]:
-    with requests.session() as session:
-        return _fetch(session, url=url, method=method, data=data, files=files)
 
 
 _api_session = requests.session()
@@ -62,7 +58,7 @@ def call_api(url_path: str, method: str = 'GET', data: Optional[Dict[str, Any]] 
 
 
 class AdminStatus(enum.Enum):
-    AUTHORIZED = 'authoried'
+    AUTHORIZED = 'authorized'
     WRONG_TOKEN = 'wrong_token'
     NOT_YET = 'not_yet'
 

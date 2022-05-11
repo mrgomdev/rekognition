@@ -28,7 +28,8 @@ def as_image_bytes(image: Union[Image.Image, bytes]) -> bytes:
 
 
 MAX_IMAGE_LENGTH = 1920
-@utils_alert.alert_slack_when_exception
+
+
 def convert_image_bytes_popular(image_bytes: bytes) -> bytes:
     image = convert_pillow_image_popular(Image.open(io.BytesIO(image_bytes)))
 
@@ -36,7 +37,6 @@ def convert_image_bytes_popular(image_bytes: bytes) -> bytes:
     return pillow_to_bytes(image=image, format=output_format)
 
 
-@utils_alert.alert_slack_when_exception
 def roughly_fit_to(image: Image.Image, target_size: Tuple[float, float], zoom_threshold: float = 0.9) -> Image.Image:
     zoom = 1.
     zoom = min(zoom, target_size[0] / image.size[0])
@@ -49,7 +49,7 @@ def roughly_fit_to(image: Image.Image, target_size: Tuple[float, float], zoom_th
         image = image.copy()
     return image
 
-@utils_alert.alert_slack_when_exception
+
 def convert_pillow_image_popular(image: Image.Image) -> Image.Image:
     old_image_format = image.format
     image = roughly_fit_to(image, target_size=(MAX_IMAGE_LENGTH, MAX_IMAGE_LENGTH))
