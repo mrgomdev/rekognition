@@ -1,6 +1,6 @@
 from typing import Tuple
 import io
-import os
+import posixpath
 import urllib.parse
 import json
 
@@ -63,7 +63,7 @@ def upload_each(idol_id: str, each_url: str) -> Tuple[dict, dict]:
     content_type, image_bytes_io = load_image_from_url(url=each_url)
 
     image_s3_bucket_name = rekognition.config.idols_bucket_name
-    image_s3_object_key = os.path.join(rekognition.config.idols_profile_root_path, idol_id, os.path.basename(urllib.parse.urlparse(url=each_url).path)).replace('\\', '/')
+    image_s3_object_key = posixpath.join(rekognition.config.idols_profile_root_path, idol_id, posixpath.basename(urllib.parse.urlparse(url=each_url).path)).replace('\\', '/')
 
     result = rekognition.manage_faces.upload_idol(image=image_bytes_io, idol_id=idol_id, image_s3_bucket_name=image_s3_bucket_name, image_s3_object_key=image_s3_object_key, content_type=content_type)
     result['image_from_url'] = each_url

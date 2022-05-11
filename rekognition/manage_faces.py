@@ -4,6 +4,7 @@ import logging
 from typing import Union, IO, Optional, List
 
 import os
+import posixpath
 import glob
 import re
 from tqdm import tqdm
@@ -39,9 +40,7 @@ def clear_all_idols() -> None:
 @utils_alert.alert_slack_when_exception
 def upload_idol_local(image_path: str, idol_id: str) -> dict:
     image_s3_bucket_name = config.idols_bucket_name
-    image_s3_object_key = os.path.join(config.idols_profile_root_path, idol_id, os.path.basename(image_path))
-    if os.sep == '\\' and os.sep in image_s3_object_key:
-        image_s3_object_key = image_s3_object_key.replace(os.sep, '/')
+    image_s3_object_key = posixpath.join(config.idols_profile_root_path, idol_id, posixpath.basename(image_path))
     with open(image_path, 'rb') as file:
         image = file.read()
     return upload_idol(image=image, idol_id=idol_id, image_s3_bucket_name=image_s3_bucket_name, image_s3_object_key=image_s3_object_key)
@@ -56,7 +55,7 @@ def upload_idol(image: Union[str, IO], idol_id: str, image_s3_bucket_name: str, 
     try:
         client = utils_boto3.client('rekognition')
         return client.index_faces(Image=dict(S3Object=dict(Bucket=idol.image_s3_bucket_name, Name=idol.image_s3_object_key)), CollectionId=collection_id, ExternalImageId=idol.to_external_image_id(), DetectionAttributes=['ALL'], MaxFaces=1)
-    except:
+    except BaseException:
         client = utils_boto3.client('s3')
         client.delete_object(Bucket=config.idols_bucket_name, Key=image_s3_object_key)
         raise

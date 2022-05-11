@@ -3,7 +3,8 @@ from types import MappingProxyType
 
 import datetime
 from pytz import timezone
-import os.path
+import os
+import posixpath
 import logging
 
 import requests
@@ -51,7 +52,7 @@ def alert_slack(logging_level: int = logging.ERROR, already_escaped_str: bool = 
 
 
 def update_hot_charged_logs(event, context):
-    response = _session.get(os.path.join(MODI_REALTIME_DB_URL_ROOT, 'rekognition/logs.json'))
+    response = _session.get(posixpath.join(MODI_REALTIME_DB_URL_ROOT, 'rekognition/logs.json'))
     parsed = response.json()
     if parsed is None:
         parsed = {}
@@ -67,13 +68,13 @@ def update_hot_charged_logs(event, context):
             count += 1
         print(f'is_charged: {is_charged}, {key}: {value}')
 
-    configs = _session.get(os.path.join(MODI_REALTIME_DB_URL_ROOT, 'rekognition/configs.json')).json()
+    configs = _session.get(posixpath.join(MODI_REALTIME_DB_URL_ROOT, 'rekognition/configs.json')).json()
     assert isinstance(configs['max-every-minute'], int)
 
     pause_charged_aws_api = count >= configs['max-every-minute']
-    old_pause_charged_aws_api = _session.get(os.path.join(MODI_REALTIME_DB_URL_ROOT, 'rekognition/flags/pause-charged-aws-api.json')).json() == True
+    old_pause_charged_aws_api = _session.get(posixpath.join(MODI_REALTIME_DB_URL_ROOT, 'rekognition/flags/pause-charged-aws-api.json')).json() == True
 
     if pause_charged_aws_api != old_pause_charged_aws_api:
         alert_slack(quota_warning=f"pause_charged_aws_api changed. {old_pause_charged_aws_api} -> {pause_charged_aws_api}. Current {count}. config[\'max-every-minute\'] {configs['max-every-minute']}")
-        response = _session.put(os.path.join(MODI_REALTIME_DB_URL_ROOT, 'rekognition/flags/pause-charged-aws-api.json'), json=pause_charged_aws_api)
+        response = _session.put(posixpath.join(MODI_REALTIME_DB_URL_ROOT, 'rekognition/flags/pause-charged-aws-api.json'), json=pause_charged_aws_api)
     assert response.ok

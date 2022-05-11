@@ -7,6 +7,7 @@ from typing import Optional, Callable, Any, IO, Union, TypedDict, Tuple
 from types import MappingProxyType
 import functools
 import os
+import posixpath
 
 import requests
 
@@ -101,7 +102,7 @@ class ControlledBoto3Client(ProxyBoto3Client):
 
     def is_paused(self, flag: Flag) -> bool:
         assert isinstance(flag, self.Flag)
-        url = os.path.join(self.FLAGS_URL_PREFIX, f'{flag.value}.json').replace(os.sep, '/')
+        url = posixpath.join(self.FLAGS_URL_PREFIX, f'{flag.value}.json')
         response = self._flag_session.get(url)
         ret = response.json()
         if not isinstance(ret, bool):
