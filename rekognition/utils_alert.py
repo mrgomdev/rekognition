@@ -13,8 +13,10 @@ import requests
 
 try:
     from . import config
+    from . import utils
 except ImportError:
     import config
+    import utils
 
 ALERT_NAME = os.environ.get('ALERT_NAME', socket.gethostname())
 
@@ -50,14 +52,18 @@ def to_slack_message_body(body: Optional[dict] = None, already_escaped_str: bool
     return dict(text=f"• [{ALERT_NAME}] {datetime.datetime.now(timezone('Asia/Seoul')).strftime('%Y %m%d %H:%M:%S.%f %Z')}\n" + to_str('\n'.join([f"> {key}\n ```{kwargs[key]}``` " for key in kwargs])))
 
 
+_slack_session = requests.session()
+if isinstance(os.getenv('SLACK_MODI_ALERTS_URL'), str):
+    _slack_session.mount(os.getenv('SLACK_MODI_ALERTS_URL'), utils.build_retry_http_adapter())
+
+
 def alert_slack(logging_level: int = logging.ERROR, already_escaped_str: bool = False, **kwargs):
     if config.ALERT:
         webhooks_url = os.environ['SLACK_MODI_ALERTS_URL']
-        with requests.session() as session:
-            try:
-                logging.log(logging_level, f'alert_slack: {session.post(url=webhooks_url, json=to_slack_message_body(kwargs, already_escaped_str=already_escaped_str))}')
-            except Exception as e:
-                logging.error(session.post(url=webhooks_url, json=to_slack_message_body(message="Alert! but exception during post.", exception=f"{type(e)}: {e}", already_escaped_str=already_escaped_str)))
+        try:
+            logging.log(logging_level, f'alert_slack: {_slack_session.post(url=webhooks_url, json=to_slack_message_body(kwargs, already_escaped_str=already_escaped_str))}')
+        except Exception as e:
+            logging.error(_slack_session.post(url=webhooks_url, json=to_slack_message_body(message="Alert! but exception during post.", exception=f"{type(e)}: {e}", already_escaped_str=already_escaped_str)))
     else:
         logging.log(logging_level, (to_slack_message_body(kwargs, already_escaped_str=already_escaped_str)['text']))
 

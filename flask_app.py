@@ -1,9 +1,11 @@
 from typing import Optional, TypedDict, List, Type
 
 import os
+import posixpath
 from icecream import ic
 
 import requests
+import requests.adapters
 
 from flask import request, render_template
 from flask import Flask
@@ -94,16 +96,12 @@ def build_markdown_from_idol_meta(idol_meta: IdolMeta) -> str:
 class DetailPayload(TypedDict):
     markdown: str
 _detail_session = requests.session()
+_detail_session.mount(rekognition.config.firebase_realtime_db_idols_meta_prefix, rekognition.utils.build_retry_http_adapter())
 @app.route('/detail/<idol_id>')
 def detail(idol_id: str):
     global _detail_session
 
-    try:
-        response = _detail_session.get(url=f'https://modi-11e0c-default-rtdb.firebaseio.com/idols-meta/{idol_id}.json')
-    except Exception as e:
-        rekognition.utils_alert.alert_slack_exception(e)
-        _detail_session = requests.session()
-        response = _detail_session.get(url=f'https://modi-11e0c-default-rtdb.firebaseio.com/idols-meta/{idol_id}.json')
+    response = _detail_session.get(url=posixpath.join(rekognition.config.firebase_realtime_db_idols_meta_prefix, f'{idol_id}.json'))
 
     assert response.text != 'null'
 

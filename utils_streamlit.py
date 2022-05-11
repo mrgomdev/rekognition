@@ -2,6 +2,7 @@ from typing import Optional, Dict, Any, IO
 import enum
 
 import requests
+import requests.adapters
 
 import rekognition.utils_alert
 import streamlit_config
@@ -47,20 +48,16 @@ def fetch(url: str, method: str = 'GET', data: Optional[Dict[str, Any]] = None, 
 
 
 _api_session = requests.session()
+_api_session.mount(streamlit_config.api_url_root, rekognition.utils.build_retry_http_adapter())
+
+
 @rekognition.utils_alert.alert_slack_when_exception
 def call_api(url_path: str, method: str = 'GET', data: Optional[Dict[str, Any]] = None, files: Optional[Dict[str, IO]] = None) -> Dict[str, Any]:
     global _api_session
     if not url_path.startswith('/'):
         url_path = '/' + url_path
 
-    try:
-        response = _fetch(session=_api_session, url=f'{streamlit_config.api_url_root}{url_path}', method=method, data=data, files=files)
-    except ErrorResponse:
-        raise
-    except Exception as e:
-        rekognition.utils_alert.alert_slack_exception(e)
-        _api_session = requests.session()
-        response = _fetch(session=_api_session, url=f'{streamlit_config.api_url_root}{url_path}', method=method, data=data, files=files)
+    response = _fetch(session=_api_session, url=f'{streamlit_config.api_url_root}{url_path}', method=method, data=data, files=files)
     return response
 
 

@@ -16,10 +16,12 @@ import botocore.client
 import boto3
 
 try:
+    from . import utils
     from . import utils_alert
     from . import utils_firebase_realtime_db
     from . import config
-except Exception:
+except ImportError:
+    import utils
     import utils_alert
     import utils_firebase_realtime_db
     import config
@@ -118,6 +120,7 @@ class ControlledBoto3Client(ProxyBoto3Client):
                 raise PausedError(f'For {item_name}, {self.CONTROLLING_FLAGS[item_name]} is True')
 
         return ret
+ControlledBoto3Client._flag_session.mount(ControlledBoto3Client.FLAGS_URL_PREFIX, utils.build_retry_http_adapter())
 
 
 def controlled_client(*args, **kwargs) -> ControlledBoto3Client:

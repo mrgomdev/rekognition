@@ -4,11 +4,7 @@ import io
 from PIL import Image
 
 import requests
-
-try:
-    from . import utils_alert
-except ImportError:
-    import utils_alert
+import requests.adapters
 
 
 def pillow_to_bytes(image: Image.Image, format: Optional[str] = None) -> bytes:
@@ -70,3 +66,7 @@ def get_error_image(url="https://twemoji.maxcdn.com/v/14.0.2/72x72/1f6ab.png") -
         response = session.get(url=url)
         image = Image.open(io.BytesIO(response.content))
     return image
+
+
+def build_retry_http_adapter() -> requests.adapters.HTTPAdapter:
+    return requests.adapters.HTTPAdapter(max_retries=requests.adapters.Retry(total=2, connect=2, backoff_factor=0.1))

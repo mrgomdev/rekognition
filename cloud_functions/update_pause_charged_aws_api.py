@@ -8,9 +8,7 @@ import posixpath
 import logging
 
 import requests
-
-
-_session = requests.session()
+import requests.adapters
 
 
 CHARGED_APIS = MappingProxyType({
@@ -26,6 +24,10 @@ CHARGED_APIS = MappingProxyType({
 ALERT = True
 ALERT_NAME = os.environ.get('ALERT_NAME', 'update_pause_charged_aws_api.py')
 MODI_REALTIME_DB_URL_ROOT = os.environ.get('MODI_REALTIME_DB_URL_ROOT', None)
+
+
+_session = requests.session()
+_session.mount(MODI_REALTIME_DB_URL_ROOT, requests.adapters.HTTPAdapter(max_retries=requests.adapters.Retry(total=2, connect=2)))
 
 
 def escape_slack(message: str) -> str:
