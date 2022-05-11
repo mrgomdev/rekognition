@@ -1,5 +1,6 @@
 from typing import Optional, Union, Tuple
 import io
+import functools
 
 from PIL import Image
 
@@ -61,6 +62,7 @@ def convert_pillow_image_popular(image: Image.Image) -> Image.Image:
     return image
 
 
+@functools.lru_cache()
 def get_error_image(url="https://twemoji.maxcdn.com/v/14.0.2/72x72/1f6ab.png") -> Image.Image:
     with requests.session() as session:
         response = session.get(url=url)
