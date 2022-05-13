@@ -71,4 +71,4 @@ def get_error_image(url="https://twemoji.maxcdn.com/v/14.0.2/72x72/1f6ab.png") -
 
 
 def build_retry_http_adapter() -> requests.adapters.HTTPAdapter:
-    return requests.adapters.HTTPAdapter(max_retries=requests.adapters.Retry(total=2, connect=2, backoff_factor=0.1))
+    return requests.adapters.HTTPAdapter(max_retries=requests.adapters.Retry(connect=2, backoff_factor=0.1))
