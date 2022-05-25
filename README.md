@@ -1,3 +1,5 @@
+# This is the upstream repo for developing [jumto-kr/rekognition](https://github.com/jumto-kr/rekognition). Please checkout it.
+***
 # Detecting idol stars with Amazon Rekognition
 
 ## [rekognition](rekognition)
@@ -11,4 +13,5 @@ Logical model scripts for running backend
 
 ## [streamlit](streamlit_app.py)
 Frontend
+
 ![frontend_sample](resources/frontend_sample.jpg)
